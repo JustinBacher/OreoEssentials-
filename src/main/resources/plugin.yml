@@ -1,5 +1,5 @@
 name: OreoEssentials
-version: "4.8-SNAPSHOT"
+version: "4.9-SNAPSHOT"
 main: fr.elias.oreoEssentials.OreoEssentials
 api-version: "1.21"
 folia-supported: true
@@ -34,6 +34,7 @@ commands:
   maintenance:
     description: Manage server maintenance mode
     aliases: [ maint ]
+
     usage: /<command> [on|off|toggle|status|whitelist|clock|motd|reload]
     permission: oreo.maintenance.admin
 
