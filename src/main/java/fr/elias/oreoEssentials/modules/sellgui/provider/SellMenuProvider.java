@@ -8,17 +8,26 @@ import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
 import fr.minuskube.inv.content.InventoryProvider;
 import fr.minuskube.inv.content.SlotPos;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public final class SellMenuProvider implements InventoryProvider {
+
+    // PDC keys used to track injected price lore so we can strip it cleanly on return
+    private static final NamespacedKey SELL_LORE_COUNT  = new NamespacedKey("oreo", "sell_lore_count");
+    private static final NamespacedKey SELL_LORE_AMOUNT = new NamespacedKey("oreo", "sell_lore_amount");
 
     private final OreoEssentials plugin;
     private final SellGuiManager manager;
@@ -96,6 +105,112 @@ public final class SellMenuProvider implements InventoryProvider {
 
     @Override
     public void update(Player player, InventoryContents contents) {
+        org.bukkit.inventory.Inventory topInv = player.getOpenInventory().getTopInventory();
+        boolean changed = false;
+
+        // Inject price lore on items sitting in sell slots
+        for (int slot = 0; slot < topInv.getSize(); slot++) {
+            int row = slot / 9, col = slot % 9;
+            if (!isSellSlot(row, col)) continue;
+            ItemStack item = topInv.getItem(slot);
+            if (item == null || item.getType() == Material.AIR) continue;
+            double price = manager.config().getUnitPrice(item);
+            if (injectPriceLore(item, price)) {
+                topInv.setItem(slot, item);
+                changed = true;
+            }
+        }
+
+        // Strip injected lore from any items the player moved back to their own inventory
+        // (covers clicks, shift-clicks, drags — anything that bypasses returnSellItemsStatic)
+        for (int slot = 0; slot < player.getInventory().getSize(); slot++) {
+            ItemStack item = player.getInventory().getItem(slot);
+            if (item == null || item.getType() == Material.AIR) continue;
+            ItemMeta meta = item.getItemMeta();
+            if (meta == null || !meta.getPersistentDataContainer().has(SELL_LORE_COUNT, PersistentDataType.INTEGER)) continue;
+            stripPriceLore(item);
+            player.getInventory().setItem(slot, item);
+            changed = true;
+        }
+
+        if (changed) player.updateInventory();
+    }
+
+    /**
+     * Appends sell-price lore to the item. Returns true if the item was actually modified.
+     * Skips re-injection when price and amount are unchanged (avoids spamming packets).
+     */
+    private boolean injectPriceLore(ItemStack item, double unitPrice) {
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return false;
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+
+        // Already injected — skip if amount hasn't changed (total would be the same)
+        if (pdc.has(SELL_LORE_COUNT, PersistentDataType.INTEGER)) {
+            Integer storedAmount = pdc.get(SELL_LORE_AMOUNT, PersistentDataType.INTEGER);
+            if (storedAmount != null && storedAmount == item.getAmount()) return false;
+
+            // Amount changed: restore original lore before re-injecting
+            int origCount = pdc.getOrDefault(SELL_LORE_COUNT, PersistentDataType.INTEGER, 0);
+            List<String> cur = meta.getLore();
+            if (origCount == 0) {
+                meta.setLore(null);
+            } else if (cur != null && cur.size() >= origCount) {
+                meta.setLore(new ArrayList<>(cur.subList(0, origCount)));
+            }
+        } else {
+            // First injection: record original lore line count
+            List<String> orig = meta.getLore();
+            pdc.set(SELL_LORE_COUNT, PersistentDataType.INTEGER, orig != null ? orig.size() : 0);
+        }
+
+        pdc.set(SELL_LORE_AMOUNT, PersistentDataType.INTEGER, item.getAmount());
+
+        List<String> lore = meta.getLore() != null ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+        if (!lore.isEmpty()) lore.add("");
+        if (unitPrice >= 0) {
+            String perItem = formatPrice(unitPrice);
+            lore.add(ChatColor.YELLOW + "Sell price: " + ChatColor.GREEN + perItem + " each");
+            if (item.getAmount() > 1) {
+                lore.add(ChatColor.YELLOW + "Total: " + ChatColor.GREEN + formatPrice(unitPrice * item.getAmount()));
+            }
+        } else {
+            lore.add(ChatColor.RED + "Not sellable");
+        }
+        meta.setLore(lore);
+        item.setItemMeta(meta);
+        return true;
+    }
+
+    private String formatPrice(double amount) {
+        if (plugin.getVaultEconomy() != null) return plugin.getVaultEconomy().format(amount);
+        return String.format("$%.2f", amount);
+    }
+
+    /**
+     * Strips injected price lore from an item before returning it to the player or
+     * passing it to the confirm snapshot. Modifies the item in-place.
+     */
+    public static void stripPriceLore(ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) return;
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return;
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        if (!pdc.has(SELL_LORE_COUNT, PersistentDataType.INTEGER)) return;
+
+        int origCount = pdc.getOrDefault(SELL_LORE_COUNT, PersistentDataType.INTEGER, 0);
+        pdc.remove(SELL_LORE_COUNT);
+        pdc.remove(SELL_LORE_AMOUNT);
+
+        if (origCount == 0) {
+            meta.setLore(null);
+        } else {
+            List<String> lore = meta.getLore();
+            if (lore != null && lore.size() > origCount) {
+                meta.setLore(new ArrayList<>(lore.subList(0, origCount)));
+            }
+        }
+        item.setItemMeta(meta);
     }
 
     private double computeTotal(Player player) {
@@ -142,7 +257,9 @@ public final class SellMenuProvider implements InventoryProvider {
 
             ItemStack it = top[slot];
             if (it != null && it.getType() != Material.AIR) {
-                map.put(slot, it.clone());
+                ItemStack clone = it.clone();
+                stripPriceLore(clone);
+                map.put(slot, clone);
             }
         }
         return map;
@@ -166,7 +283,9 @@ public final class SellMenuProvider implements InventoryProvider {
 
             top[slot] = null;
 
-            Map<Integer, ItemStack> leftover = player.getInventory().addItem(it);
+            ItemStack toReturn = it.clone();
+            stripPriceLore(toReturn);
+            Map<Integer, ItemStack> leftover = player.getInventory().addItem(toReturn);
             leftover.values().forEach(drop -> player.getWorld().dropItemNaturally(player.getLocation(), drop));
         }
 
