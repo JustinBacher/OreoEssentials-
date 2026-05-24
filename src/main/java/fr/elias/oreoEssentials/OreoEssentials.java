@@ -223,7 +223,9 @@ public final class OreoEssentials extends JavaPlugin {
     public TpCrossServerBroker getTpBroker() { return tpBroker; }
 
     private fr.elias.oreoEssentials.modules.portals.PortalsManager portals;
+    public fr.elias.oreoEssentials.modules.portals.PortalsManager getPortalsManager() { return portals; }
     private fr.elias.oreoEssentials.modules.jumpads.JumpPadsManager jumpPads;
+    public fr.elias.oreoEssentials.modules.jumpads.JumpPadsManager getJumpPadsManager() { return jumpPads; }
     private fr.elias.oreoEssentials.modules.playervaults.PlayerVaultsConfig playerVaultsConfig;
 
     private fr.elias.oreoEssentials.modgui.ModGuiService modGuiService;
@@ -239,6 +241,7 @@ public final class OreoEssentials extends JavaPlugin {
     private CommandToggleConfig commandToggleConfig;
     private CommandToggleService commandToggleService;
     private AuctionHouseModule auctionHouse;
+    public AuctionHouseModule getAuctionHouseModule() { return auctionHouse; }
     private fr.elias.oreoEssentials.modules.orders.OrdersModule ordersModule;
     public fr.elias.oreoEssentials.modules.orders.OrdersModule getOrdersModule() { return ordersModule; }
     private fr.elias.oreoEssentials.network.NetworkCountReceiver networkCountReceiver;
@@ -378,6 +381,13 @@ public final class OreoEssentials extends JavaPlugin {
     private ScoreboardService scoreboardService;
     private fr.elias.oreoEssentials.modules.mobs.HealthBarListener healthBarListener;
     private ClearLagManager clearLag;
+    public ClearLagManager getClearLagManager() { return clearLag; }
+
+    private fr.elias.oreoEssentials.modules.commandcontrol.CommandControlService commandControlService;
+    public fr.elias.oreoEssentials.modules.commandcontrol.CommandControlService getCommandControlService() { return commandControlService; }
+
+    private fr.elias.oreoEssentials.modules.daily.DailyService dailyService;
+    public fr.elias.oreoEssentials.modules.daily.DailyService getDailyService() { return dailyService; }
 
     private fr.elias.oreoEssentials.modules.aliases.AliasService aliasService;
     public fr.elias.oreoEssentials.modules.aliases.AliasService getAliasService() { return aliasService; }
@@ -742,14 +752,14 @@ public final class OreoEssentials extends JavaPlugin {
             java.io.File f = new java.io.File(getDataFolder(), "commandsmodule/command-control.yml");
             if (!f.exists()) { f.getParentFile().mkdirs(); saveResource("commandsmodule/command-control.yml", false); }
             var yml = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(f);
-            var commandControl = new fr.elias.oreoEssentials.modules.commandcontrol.CommandControlService();
-            commandControl.load(yml);
-            if (commandControl.isEnabled()) {
-                Bukkit.getPluginManager().registerEvents(new fr.elias.oreoEssentials.modules.commandcontrol.CommandControlListener(this, commandControl), this);
-                if (commandControl.isHideFromTab()) {
-                    Bukkit.getPluginManager().registerEvents(new fr.elias.oreoEssentials.modules.commandcontrol.CommandControlTabHideListener(commandControl), this);
+            this.commandControlService = new fr.elias.oreoEssentials.modules.commandcontrol.CommandControlService();
+            commandControlService.load(yml);
+            if (commandControlService.isEnabled()) {
+                Bukkit.getPluginManager().registerEvents(new fr.elias.oreoEssentials.modules.commandcontrol.CommandControlListener(this, commandControlService), this);
+                if (commandControlService.isHideFromTab()) {
+                    Bukkit.getPluginManager().registerEvents(new fr.elias.oreoEssentials.modules.commandcontrol.CommandControlTabHideListener(commandControlService), this);
                 }
-                getLogger().info("[CommandControl] Enabled (hideFromTab=" + commandControl.isHideFromTab() + ")");
+                getLogger().info("[CommandControl] Enabled (hideFromTab=" + commandControlService.isHideFromTab() + ")");
             } else {
                 getLogger().info("[CommandControl] Disabled.");
             }
@@ -1059,8 +1069,8 @@ public final class OreoEssentials extends JavaPlugin {
         fr.elias.oreoEssentials.modules.daily.DailyStorage dailyStorage = fr.elias.oreoEssentials.modules.daily.DailyStorage.create(this, dailyConfig);
         this.dailyRewardsConfig = new fr.elias.oreoEssentials.modules.daily.RewardsConfig(this);
         this.dailyRewardsConfig.load();
-        var dailySvc = new fr.elias.oreoEssentials.modules.daily.DailyService(this, dailyConfig, dailyStorage, dailyRewardsConfig);
-        var dailyCmd = new fr.elias.oreoEssentials.modules.daily.DailyCommand(this, dailyConfig, dailySvc, dailyRewardsConfig);
+        this.dailyService = new fr.elias.oreoEssentials.modules.daily.DailyService(this, dailyConfig, dailyStorage, dailyRewardsConfig);
+        var dailyCmd = new fr.elias.oreoEssentials.modules.daily.DailyCommand(this, dailyConfig, dailyService, dailyRewardsConfig);
         if (getCommand("daily") != null) { getCommand("daily").setExecutor(dailyCmd); getCommand("daily").setTabCompleter(dailyCmd); }
         getLogger().info("[Daily] Rewards system initialized with " + (dailyConfig.mongo.enabled ? "MongoDB" : "file-based") + " storage.");
     }
@@ -2385,6 +2395,12 @@ public final class OreoEssentials extends JavaPlugin {
                 getLogger().info("[Currency] Using JSON storage");
             }
             this.currencyService = new CurrencyService(this, currencyStorage, currencyConfig);
+            Bukkit.getServicesManager().register(
+                    fr.elias.oreoEssentials.api.OreoEssentialsAPI.class,
+                    new fr.elias.oreoEssentials.api.impl.OreoEssentialsAPIImpl(this),
+                    this,
+                    org.bukkit.plugin.ServicePriority.Normal);
+            getLogger().info("[Currency] Registered OreoEssentialsAPI via ServicesManager");
             this.commands.register(new CurrencyCommand(this)).register(new CurrencyBalanceCommand(this)).register(new CurrencySendCommand(this)).register(new CurrencyTopCommand(this));
             if (getCommand("currency")        != null) getCommand("currency").setTabCompleter(new CurrencyCommandTabCompleter(this));
             if (getCommand("currencybalance") != null) getCommand("currencybalance").setTabCompleter(new CurrencyBalanceTabCompleter(this));
