@@ -1,5 +1,7 @@
 # 🍪 OreoEssentials
-CHECK LICENSE HERE: https://docs.oreostudios.fr/oreoessentials/general-license/general-license-oreoessentials
+
+> **LICENSE:** https://docs.oreostudios.fr/oreoessentials/general-license/general-license-oreoessentials
+
 <p align="center">
   <img width="500" height="500" alt="OreoEssentials logo" src="https://github.com/user-attachments/assets/dd1bd76b-3602-4019-95c6-36337faa1222" />
 </p>
@@ -10,10 +12,30 @@ CHECK LICENSE HERE: https://docs.oreostudios.fr/oreoessentials/general-license/g
 </p>
 
 <p align="center">
-  Documentation: <a href="https://docs.oreo-studio.shop/oreoessentials/">https://docs.oreo-studio.shop/oreoessentials/</a>
+  Documentation: <a href="https://docs.oreostudios.fr/oreoessentials/">https://docs.oreostudios.fr/oreoessentials/</a>
 </p>
 
-OreoEssentials provides a modern Essentials replacement for single and multi-server Paper networks with homes, warps, kits, GUIs, cross-server syncing (inventory/enderchest/economy), RabbitMQ/Redis/Mongo integrations, moderation tools, and much more — all designed for high-performance networks.
+---
+
+> ## ⛔ FORKING POLICY — READ BEFORE ANYTHING ELSE
+>
+> **Forking or publicly distributing any derivative of this repository without explicit written authorization from Oreo Studios is strictly forbidden.**
+>
+> This applies to forks, mirrors, re-uploads, rebrands, and any derived work — whether modified or not.
+> Violations may result in a DMCA takedown and legal action under French intellectual property law.
+>
+> To request authorization, open a ticket on the official **Oreo Studios Discord** and provide:
+> - Your GitHub username
+> - A description of your intended use / distribution
+> - The repository URL you plan to publish (if any)
+> - A summary of the changes you plan to make
+>
+> A maintainer will respond with approval, denial, or follow-up questions.
+> The LICENSE file governs your legal rights. If you are unsure how it applies, consult legal counsel.
+
+---
+
+OreoEssentials is a modern Essentials replacement for single and multi-server Paper networks. It provides homes, warps, kits, GUIs, cross-server syncing (inventory / enderchest / economy), RabbitMQ/Redis/MongoDB integrations, moderation tools, and much more — all designed for high-performance networks.
 
 ---
 
@@ -23,32 +45,39 @@ OreoEssentials provides a modern Essentials replacement for single and multi-ser
 - Kits with cooldowns, permissions & GUI
 - Portals & JumpPads
 - /rtp with rank-based radius & region support
-- Chat formatter (hex gradients, RGB, PlaceholderAPI)
+- Chat formatter (hex gradients, RGB, PlaceholderAPI, MiniMessage)
 - Economy (Vault + internal DB backends)
+- Multi-currency system (async, leaderboard, PAPI placeholders)
 - Cross-server inventory, XP, health & hunger sync
 - Cross-server EnderChest with rank-based size
 - Moderation tools: ban, mute, kick, freeze, jail
-- OreoHolograms — built-in hologram system (armor stands)
-- Alias editor for command renames (aliases.yml)
+- OreoHolograms — built-in hologram system (armor stands + display entities)
+- Alias editor for command renames (`aliases.yml`)
 - DailyRewards & PlaytimeRewards
 - Same-server & cross-server trading
-- Integrations: RabbitMQ, Redis, MongoDB
+- Market orders / auction house
+- AFK detection with optional AFK pool teleport
+- Vanish, freeze, temp-fly, maintenance mode
+- Web panel integration (REST API + RabbitMQ sync)
+- Integrations: RabbitMQ, Redis, MongoDB, Vault, PlaceholderAPI
 - Async operations and Redis caching for performance
 - SmartInvs-based GUIs for modern UX
 - 200+ commands and extensive PlaceholderAPI placeholders
+- Folia-compatible
 
 ---
 
 ## 📦 Requirements
 
-- Server: Paper / Spigot **1.21+**
-- Java: **17+**
-- Optional services:
-  - MongoDB (recommended for persistence)
-  - Redis (cache and fast sync signals)
-  - RabbitMQ (cross-server messaging)
-  - Vault + economy provider (for /balance, /pay)
-  - PlaceholderAPI (for placeholders in chat, holograms & GUIs)
+| Requirement | Details |
+|---|---|
+| Server | Paper / Spigot **1.21+** (Folia supported) |
+| Java | **17+** |
+| MongoDB | Recommended for persistence |
+| Redis | Cache and fast sync signals |
+| RabbitMQ | Cross-server messaging |
+| Vault | For `/balance`, `/pay` |
+| PlaceholderAPI | For placeholders in chat, holograms & GUIs |
 
 ---
 
@@ -56,21 +85,17 @@ OreoEssentials provides a modern Essentials replacement for single and multi-ser
 
 1. Download `OreoEssentials.jar`.
 2. Drop it into your server `/plugins` folder.
-3. Start the server to generate the configuration files.
-4. Edit configs at `/plugins/OreoEssentials/` (see list below).
+3. Start the server to generate configuration files.
+4. Edit configs under `/plugins/OreoEssentials/`.
 5. Restart the server.
-
-Once started, configure permissions and optional integrations (Mongo/Redis/RabbitMQ/Vault/PAPI) as needed.
 
 ---
 
 ## 🌍 Cross-Server Setup (Multi-Server Networks)
 
-OreoEssentials is designed to work across Velocity/Bungee + multiple Paper servers.
+OreoEssentials is designed to work across Velocity/BungeeCord + multiple Paper servers.
 
-### Database (Mongo / Redis)
-
-Set the database options in `database.yml`. Example:
+### Database (`database.yml`)
 
 ```yaml
 mongo:
@@ -88,12 +113,7 @@ redis:
   password: ""
 ```
 
-- MongoDB: recommended as the canonical storage for homes, warps, player data.
-- Redis: used as a cache + fast sync signals (optional but recommended).
-
-### RabbitMQ (Cross-Server Messaging)
-
-In `rabbitmq.yml`:
+### RabbitMQ (`rabbitmq.yml`)
 
 ```yaml
 enabled: true
@@ -105,11 +125,7 @@ virtual-host: "/"
 prefix: "oreo"
 ```
 
-RabbitMQ facilitates cross-server home/warp/spawn teleports, trades, inventory and enderchest sync signals.
-
-### Feature toggles
-
-Enable only what you need in `settings.yml`:
+### Feature Toggles (`settings.yml`)
 
 ```yaml
 features:
@@ -124,200 +140,375 @@ features:
 
 ---
 
-## 🧾 Configuration files overview
+## 🧾 Configuration Files
 
-Common config files created under `/plugins/OreoEssentials/`:
-
-- settings.yml — core toggles & features
-- database.yml — MongoDB / PostgreSQL / Redis configuration
-- rabbitmq.yml — cross-server messaging configuration
-- chat-format.yml — chat formats, gradients, channels
-- messages.yml — all translatable messages
-- dailyrewards.yml — daily rewards configuration
-- playtime-rewards.yml — playtime reward milestones
-- portals.yml — portals & jump pads
-- aliases.yml — alias editor
-- holograms.yml — OreoHolograms definitions
-- other plugin-specific files (kits.yml, warps.yml, homes.yml, etc.)
-
----
-
-## 🔧 Examples
-
-Hologram example (`holograms.yml`):
-
-```yaml
-spawn-board:
-  world: "world"
-  x: 0.5
-  y: 80.0
-  z: 0.5
-  lines:
-    - "&b&lWelcome to &f&lYourServer"
-    - "&7Online: &a%server_online%"
-    - "&7Balance: &e%vault_eco_balance_fixed%"
-```
-
-Alias editor (`aliases.yml`):
-
-```yaml
-home:
-  - "maison"
-  - "hm"
-
-spawn:
-  - "hub"
-  - "lobby"
-```
-
-Daily rewards (`dailyrewards.yml`):
-
-```yaml
-rewards:
-  day-1:
-    display-name: "&aDay 1"
-    commands:
-      - "eco give %player% 500"
-  day-7:
-    display-name: "&6Day 7 (Streak!)"
-    commands:
-      - "eco give %player% 5000"
-      - "lp user %player% parent add vip-temp"
-```
-
-Playtime rewards (`playtime-rewards.yml`):
-
-```yaml
-milestones:
-  "3600":     # seconds => 1 hour
-    commands:
-      - "eco give %player% 1000"
-  "21600":    # 6 hours
-    commands:
-      - "crate key give %player% playtime 1"
-```
-
-Chat format sample (`chat-format.yml`):
-
-```yaml
-chat:
-  format: "<#ff8800:%player_name%> &7» &f%message%"
-  enable-gradient: true
-```
+| File | Purpose |
+|---|---|
+| `settings.yml` | Core toggles & features |
+| `database.yml` | MongoDB / PostgreSQL / Redis |
+| `rabbitmq.yml` | Cross-server messaging |
+| `chat-format.yml` | Chat formats, gradients, channels |
+| `messages.yml` | All translatable messages |
+| `dailyrewards.yml` | Daily rewards |
+| `playtime-rewards.yml` | Playtime reward milestones |
+| `portals.yml` | Portals & jump pads |
+| `aliases.yml` | Command alias editor |
+| `holograms.yml` | OreoHolograms definitions |
+| `afk/config.yml` | AFK module + pool teleport |
+| `orders/` | Market orders module |
 
 ---
 
-## 🧑‍💻 Commands (Overview)
+## 🧑‍💻 Commands Overview
 
-A small subset — see the full commands & permissions in the Wiki/Docs:
+**Player commands:**
+`/home` `/sethome` `/delhome` `/homes` `/warp` `/setwarp` `/delwarp` `/warps` `/spawn` `/rtp` `/back` `/tpa` `/tpahere` `/tpaccept` `/tpdeny` `/ec` `/kit` `/kits` `/bal` `/pay` `/daily` `/playtime` `/rewards` `/trade` `/afk` `/msg` `/reply` `/sit`
 
-Player commands:
-- /home, /sethome, /delhome, /homes
-- /warp, /setwarp, /delwarp, /warps
-- /spawn
-- /rtp
-- /back
-- /tpa, /tpahere, /tpaccept, /tpdeny
-- /ec (enderchest)
-- /kit, /kits
-- /bal, /pay
-- /daily, /playtime, /rewards
-- /trade <player>
+**Staff / Admin commands:**
+`/ban` `/tempban` `/unban` `/mute` `/tempmute` `/unmute` `/kick` `/freeze` `/jail` `/unjail` `/invsee` `/sudo` `/vanish` `/oereload` `/oecraft` `/ic`
 
-Staff/Admin commands:
-- /ban, /tempban, /unban
-- /mute, /tempmute, /unmute
-- /kick
-- /freeze
-- /jail, /unjail
-- /invsee
-- /sudo
-- /oereload (reload configs)
-- /oecraft (custom crafting GUI)
-- /ic (interactive commands editor)
+Full commands & permissions: [docs.oreostudios.fr](https://docs.oreostudios.fr/oreoessentials/)
 
 ---
 
 ## 🔌 Integrations & Placeholders
 
-- Vault (economy interactions)
-- PlaceholderAPI (chat, holograms, GUIs)
-- MongoDB, Redis, RabbitMQ (optional multi-server sync)
-- Example placeholders:
-  - %oreo_home_count%
-  - %oreo_warp_count%
-  - %oreo_playtime%
-  - %oreo_daily_streak%
-  - %oreo_ec_balance%
-  - %oreo_server_name%
-  - %oreo_crossserver_enabled%
+- Vault, PlaceholderAPI, MongoDB, Redis, RabbitMQ, ItemsAdder, Nexo, PacketEvents, SmartInvs
+
+Default PAPI placeholders:
+
+| Placeholder | Returns |
+|---|---|
+| `%oreo_home_count%` | Number of homes set |
+| `%oreo_warp_count%` | Number of warps |
+| `%oreo_playtime%` | Total playtime |
+| `%oreo_daily_streak%` | Current daily streak |
+| `%oreo_ec_balance%` | Enderchest row count |
+| `%oreo_server_name%` | Current server name |
+| `%oreo_crossserver_enabled%` | Cross-server toggle state |
+
+Currency placeholders (via `oreocurrency` expansion — see API section):
+
+| Placeholder | Returns |
+|---|---|
+| `%oreocurrency_balance_<id>%` | Raw balance |
+| `%oreocurrency_balance_formatted_<id>%` | Formatted with symbol |
+| `%oreocurrency_symbol_<id>%` | Currency symbol |
+| `%oreocurrency_name_<id>%` | Currency display name |
+| `%oreocurrency_rank_<id>%` | Leaderboard rank |
+| `%oreocurrency_top_<id>_<n>_name%` | Top-N player name |
+| `%oreocurrency_top_<id>_<n>_balance%` | Top-N player balance |
 
 ---
 
-## 🤝 Contributing
+## 🛠️ Developer API
 
-Contributions are welcome!
+OreoEssentials exposes a full developer API for other plugins.
 
-- Fork the repository ( READ FORK POLICY FIRST)
-- Create a feature branch: git checkout -b feature/my-feature
-- Commit your changes: git commit -m "Add my feature"
-- Push the branch: git push origin feature/my-feature
-- Open a Pull Request
+### Adding the Dependency
 
-Please follow existing code style and use meaningful commit messages. See the documentation link above for developer guidelines and contribution details.
+Add to your `plugin.yml`:
+```yaml
+softdepend:
+  - OreoEssentials
+```
+
+### Getting the API Instance
+
+```java
+RegisteredServiceProvider<OreoEssentialsAPI> rsp =
+    Bukkit.getServicesManager().getRegistration(OreoEssentialsAPI.class);
+if (rsp == null) {
+    getLogger().warning("OreoEssentials not loaded — API unavailable.");
+    return;
+}
+OreoEssentialsAPI oes = rsp.getProvider();
+```
+
+Or via the static shorthand:
+```java
+OreoEssentialsAPI api = OreoEssentialsAPI.get(); // null if not loaded
+```
+
+---
+
+### API Modules (44 interfaces)
+
+#### Economy & Currency
+
+| Interface | Description |
+|---|---|
+| `IEconomyAPI` | Built-in Vault-compatible economy (synchronous) |
+| `ICurrencyAPI` | Multi-currency system — async, CompletableFuture-based |
+| `IOrdersAPI` | Market orders (create, fill, cancel, list) |
+| `IAuctionHouseAPI` | Auction house (list, purchase, cancel, browse) |
+| `IShopAPI` | Buy/sell shop processing |
+
+**Async currency example:**
+```java
+ICurrencyAPI gems = oes.currency("gems");
+if (gems != null) {
+    gems.withdraw(playerUUID, 100.0).thenAccept(success -> {
+        if (success) {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                player.sendMessage("Withdrawn 100 gems.");
+            });
+        }
+    });
+}
+```
+
+`ICurrencyAPI` methods: `getBalance(UUID)`, `has(UUID, amount)`, `deposit(UUID, amount)`, `withdraw(UUID, amount)`, `setBalance(UUID, amount)`, `transfer(UUID from, UUID to, amount)` — all return `CompletableFuture<Boolean>` or `CompletableFuture<Double>`.
+
+#### Teleportation & Locations
+
+| Interface | Description |
+|---|---|
+| `ITeleportAPI` | TPA requests and silent teleportation |
+| `IWarpsAPI` | Server warps (list, get, set, delete, rename) |
+| `IPlayerWarpsAPI` | Player-created personal warps |
+| `ISpawnAPI` | Main spawn and first-spawn management |
+| `IBackAPI` | `/back` last-location tracking |
+| `IDeathBackAPI` | Death location tracking and teleport |
+| `IJumpPadsAPI` | Jump pad creation and management |
+| `IPortalsAPI` | Cuboid portal creation and management |
+
+#### Inventory & Storage
+
+| Interface | Description |
+|---|---|
+| `IPlayerVaultsAPI` | Personal vaults (multi-vault, tier-based slots) |
+| `IEnderChestAPI` | Ender chest with rank-based row counts |
+| `ISellGuiAPI` | Item selling GUI |
+
+#### Player Status & Cosmetics
+
+| Interface | Description |
+|---|---|
+| `IAfkAPI` | AFK detection and toggle (`isAfk`, `toggleAfk`, `getAfkForSeconds`) |
+| `IVanishAPI` | Staff invisibility toggle |
+| `IFreezeAPI` | Freeze / unfreeze players |
+| `ITempFlyAPI` | Grant timed flight (`grantFlight(Player, seconds)`) |
+| `IScoreboardAPI` | Animated sidebar scoreboard |
+| `IBossBarAPI` | Personal boss bar display |
+| `INametagAPI` | Custom nametags above players |
+| `IHologramsAPI` | OHolograms — create, update, remove, reload |
+
+#### Moderation & Control
+
+| Interface | Description |
+|---|---|
+| `IPunishmentAPI` | Punishment history (get, clear) |
+| `IWarningsAPI` | Warning system (warn, unwarn, list, clear) |
+| `IJailAPI` | Jail / release players |
+| `IIgnoreAPI` | Player ignore lists |
+| `ICommandControlAPI` | Block / unblock commands at runtime |
+| `ICommandToggleAPI` | Enable / disable commands at runtime |
+| `ICrossServerAPI` | Cross-server moderation (kill, kick, ban, freeze, vanish…) |
+| `IMaintenanceAPI` | Maintenance mode + whitelist |
+
+#### Gameplay
+
+| Interface | Description |
+|---|---|
+| `IKitsAPI` | Kits (list, get, claim, cooldown check) |
+| `IMailAPI` | In-game mail (send, get, mark read, delete) |
+| `ITradeAPI` | Player-to-player trading sessions |
+| `IDailyAPI` | Daily reward claim and status |
+| `IPlaytimeAPI` | Playtime tracking (get, set, add) |
+| `IAliasesAPI` | Command aliases with cooldowns |
+| `ICustomCraftAPI` | Custom crafting recipes |
+| `IInteractiveCommandsAPI` | IC commands bound to blocks/entities |
+
+#### Server & Infrastructure
+
+| Interface | Description |
+|---|---|
+| `IChatAPI` | Cross-server chat, broadcast mute/unmute |
+| `IClearLagAPI` | Entity cleanup trigger |
+| `IShardsAPI` | World sharding and cross-shard player transfer |
+| `IAutoRebootAPI` | Automatic reboot scheduler |
+
+---
+
+### Plugin Events
+
+Listen to OreoEssentials events by implementing Bukkit's `@EventHandler`:
+
+#### Currency Events (`fr.elias.oreoEssentials.api.events`)
+
+**`CurrencyTransactionEvent`** — Async, Cancellable
+Fired before any deposit / withdraw / set-balance operation.
+
+```java
+@EventHandler
+public void onTransaction(CurrencyTransactionEvent e) {
+    if (e.getCurrencyId().equals("gems") 
+        && e.getType() == CurrencyTransactionEvent.Type.WITHDRAW
+        && e.getAmount() > 1000) {
+        e.setCancelled(true);
+    }
+}
+```
+
+Fields: `getPlayerId()` · `getCurrencyId()` · `getType()` (DEPOSIT / WITHDRAW / SET) · `getAmount()`
+
+**`CurrencyTransferEvent`** — Async, Cancellable
+Fired before a player-to-player currency transfer.
+
+Fields: `getFrom()` · `getTo()` · `getCurrencyId()` · `getAmount()`
+
+#### Hologram Events (`fr.elias.oreoEssentials.modules.holograms.api.events`)
+
+| Event | Thread | Cancellable | Description |
+|---|---|---|---|
+| `HologramCreateEvent` | Sync | Yes | Hologram being created |
+| `HologramDeleteEvent` | Sync | Yes | Hologram being deleted |
+| `HologramUpdateEvent` | Sync | Yes | Hologram data modified |
+| `HologramShowEvent` | Sync | Yes | Hologram shown to a player |
+| `HologramHideEvent` | Sync | Yes | Hologram hidden from a player |
+| `HologramsLoadedEvent` | Async | No | All holograms loaded from disk |
+| `HologramsUnloadedEvent` | Async | No | Holograms being unloaded |
+
+`HologramUpdateEvent` exposes a `HologramModification` enum: `TEXT`, `POSITION`, `SCALE`, `TRANSLATION`, `BILLBOARD`, `BACKGROUND`, `TEXT_SHADOW`, `TEXT_ALIGNMENT`, `SEE_THROUGH`, `SHADOW_RADIUS`, `SHADOW_STRENGTH`, `UPDATE_TEXT_INTERVAL`, `UPDATE_VISIBILITY_DISTANCE`.
+
+---
+
+### RabbitMQ Packet API
+
+Extend `Packet` to send custom cross-server data:
+
+```java
+public class MyPacket extends Packet {
+    private String data;
+
+    @Override
+    protected void write(FriendlyByteOutputStream out) {
+        out.writeUtf(data);
+    }
+
+    @Override
+    protected void read(FriendlyByteInputStream in) {
+        data = in.readUtf();
+    }
+}
+```
+
+Built-in packet types:
+
+| Packet | Fields | Purpose |
+|---|---|---|
+| `DeathMessagePacket` | deadPlayerId, deadPlayerName, message, sourceServer | Broadcast death messages |
+| `SendRemoteMessagePacket` | targetId, message | Send message to player on another server |
+| `SafeZoneEnterPacket` | playerId, targetServer, worldName, regionName | World sharding / safe zone tracking |
+| `JsonPacket` | json | Generic lightweight JSON wrapper |
+
+All packets carry a unique `packetId (UUID)` set automatically by `PacketManager`.
+
+---
+
+## 🌐 Web Panel REST API
+
+The web panel module (`WebPanelConfig`) connects OreoEssentials to an external Spring Boot dashboard.
+
+### Authentication
+
+All requests require the header:
+```
+X-Api-Key: oreo_<prefix>_<secret>
+```
+
+The key is configured in `plugins/OreoEssentials/webpanel/config.yml`.
+
+### Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/v1/plugin/ping` | Health check / verify API key |
+| `POST` | `/api/v1/plugin/sync` | Push full player data snapshot |
+| `POST` | `/api/v1/plugin/weblink/register` | Register a web-link account code |
+| `GET` | `/api/v1/plugin/players/{uuid}/registered` | Check if UUID has a linked panel account |
+| `POST` | `/api/v1/plugin/heartbeat` | Periodic heartbeat with online UUIDs |
+| `GET` | `/api/v1/plugin/actions?onlinePlayers=...` | Poll pending SELL/DELETE actions from panel |
+| `GET` | `/api/v1/plugin/deliveries?playerUuid=...` | Poll items queued for delivery on login |
+| `POST` | `/api/v1/plugin/deliveries/confirm` | Confirm delivered items |
+| `POST` | `/api/v1/plugin/orders/sync` | Push active market orders to panel |
+| `POST` | `/api/v1/plugin/luckperms/sync` | Sync LuckPerms groups + permissions to panel |
+| `POST` | `/api/v1/plugin/afk/status` | Push AFK enter/exit event (REST fallback) |
+
+### Sync Mechanism
+
+- **HTTP polling** for actions and deliveries (configurable interval)
+- **RabbitMQ (optional)** for real-time async messaging
+- **Automatic fallback** to REST when RabbitMQ is unavailable
+
+### Sync Body Examples
+
+**POST /api/v1/plugin/sync**
+```json
+{
+  "playerUuid": "550e8400-e29b-41d4-a716-446655440000",
+  "playerName": "Notch",
+  "playerDataJson": "{...}"
+}
+```
+
+**POST /api/v1/plugin/heartbeat**
+```json
+{
+  "onlineUuids": ["uuid1", "uuid2"]
+}
+```
+
+**POST /api/v1/plugin/afk/status**
+```json
+{
+  "playerUuid": "...",
+  "playerName": "Notch",
+  "serverName": "survival",
+  "world": "world",
+  "x": 0,
+  "y": 64,
+  "z": 0,
+  "afkSinceMs": 1716633600000,
+  "entering": true
+}
+```
 
 ---
 
 ## 🐞 Bug Reports & Support
 
 When reporting a bug, include:
-- Server version (Paper/Spigot)
+- Server version (Paper/Spigot build)
 - OreoEssentials version
 - Startup log / stacktrace
 - Relevant config snippets
 
 Support channels:
-- SpigotMC resource page (discussions & reviews)
-- Oreo Studios Discord (recommended for fast help)
-- GitHub Issues (for reproducible bugs & feature requests)
-
----
-
-## Forking Policy
-
-Oreo Studios appreciates community interest in contributing and collaborating. To avoid confusion about official forks and derivative distributions, we require explicit permission before publicly forking or distributing a derived version of this repository.
-
-If you wish to fork or publicly distribute a derived plugin, please follow these steps to request permission:
-
-1. Open a ticket on our official Oreo Studios Discord. Include a link to your Discord profile or tag so we can verify your request.
-2. In the ticket, provide:
-   - Your GitHub username
-   - A short description of how you intend to use or distribute the fork
-   - The repository or project URL you plan to publish (if applicable)
-   - Any substantive changes you plan to make that differ from the original project
-3. Wait for a reply from an Oreo Studios maintainer. We will respond with approval, denial, or follow-up questions.
-
-Note: This is our project policy. The legal rights and permissions that apply to this repository are governed by the repository's LICENSE file. If you are unsure how the license applies to your intended use, consult legal counsel.
+- **Oreo Studios Discord** — fastest response
+- **GitHub Issues** — reproducible bugs & feature requests
 
 ---
 
 ## Copyright & Company Info
 
-Copyright (c) Oreo Studios.
+Copyright © Oreo Studios. All rights reserved.
 
 Oreo Studios is an officially registered company in France.
-- SIRET: 993 823 469 00017
-- Code APE: 62.01Z
+- **SIRET:** 993 823 469 00017
+- **Code APE:** 62.01Z
 
-All rights reserved. Portions of this project are provided under the terms of the LICENSE file included in this repository. For formal copyright claims, permission requests, or questions related to commercial use, please open a ticket on our official Oreo Studios Discord so we can respond and track your request.
+For formal copyright claims, permission requests, or commercial use inquiries, open a ticket on the official Oreo Studios Discord.
 
 ---
 
 ## 📄 License
 
-OreoEssentials is free to use. See the LICENSE file in this repository for full licensing terms.
+See the `LICENSE` file in this repository for full licensing terms.
+Check the live license page: https://docs.oreostudios.fr/oreoessentials/general-license/general-license-oreoessentials
 
 ---
 
 Made with ❤️ by Oreo Studios  
-“Stop buying 10 plugins. Use one that actually understands networks.”
+*"Stop buying 10 plugins. Use one that actually understands networks."*
