@@ -165,6 +165,36 @@ public interface OreoEssentialsAPI {
     @Nullable IPlayerWarpsAPI playerWarps();
     /** Player Vaults module. Null if disabled. */
     @Nullable IPlayerVaultsAPI playerVaults();
+    /** CommandToggle module (runtime command enable/disable). Null if disabled. */
+    @Nullable ICommandToggleAPI commandToggle();
+    /** Interactive Commands (IC) module. Null if disabled. */
+    @Nullable IInteractiveCommandsAPI interactiveCommands();
+    /** /back last-location tracking. Null if disabled. */
+    @Nullable IBackAPI back();
+    /** Death-back location tracking. Null if disabled. */
+    @Nullable IDeathBackAPI deathBack();
+    /** Player ignore lists. Null if disabled. */
+    @Nullable IIgnoreAPI ignore();
+    /** In-game mail. Null if disabled. */
+    @Nullable IMailAPI mail();
+    /** Playtime tracking and rewards. Null if disabled. */
+    @Nullable IPlaytimeAPI playtime();
+    /** Animated sidebar scoreboard. Null if disabled. */
+    @Nullable IScoreboardAPI scoreboard();
+    /** World sharding (cross-shard transfers). Null if disabled. */
+    @Nullable IShardsAPI shards();
+    /** TempFly (time-limited flight). Null if disabled. */
+    @Nullable ITempFlyAPI tempFly();
+    /** Player warnings. Null if disabled. */
+    @Nullable IWarningsAPI warnings();
+    /** Auto-reboot scheduler. Null if disabled. */
+    @Nullable IAutoRebootAPI autoReboot();
+    /** Command aliases with checks and cooldowns. Null if disabled. */
+    @Nullable IAliasesAPI aliases();
+    /** Vanish (staff invisibility). Null if disabled. */
+    @Nullable IVanishAPI vanish();
+    /** Freeze (immobilise players). Null if disabled. */
+    @Nullable IFreezeAPI freeze();
 
     // -------------------------------------------------------------------------
     // Static accessor

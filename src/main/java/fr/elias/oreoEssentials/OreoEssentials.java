@@ -198,6 +198,9 @@ public final class OreoEssentials extends JavaPlugin {
     private fr.elias.oreoEssentials.modules.warnings.WarnService warnService;
     public fr.elias.oreoEssentials.modules.warnings.WarnService getWarnService() { return warnService; }
 
+    private fr.elias.oreoEssentials.modules.mail.MailService mailService;
+    public fr.elias.oreoEssentials.modules.mail.MailService getMailService() { return mailService; }
+
     private fr.elias.oreoEssentials.modules.punishment.PunishmentLogger punishmentLogger;
     public fr.elias.oreoEssentials.modules.punishment.PunishmentLogger getPunishmentLogger() { return punishmentLogger; }
 
@@ -955,7 +958,8 @@ public final class OreoEssentials extends JavaPlugin {
 
     private void initMail() {
         try {
-            var mailService  = new fr.elias.oreoEssentials.modules.mail.MailService(this);
+            this.mailService = new fr.elias.oreoEssentials.modules.mail.MailService(this);
+            var mailService  = this.mailService;
             var mailCmd      = new fr.elias.oreoEssentials.modules.mail.MailCommand(mailService);
             var mailListener = new fr.elias.oreoEssentials.modules.mail.MailListener(mailService);
             this.commands.register(mailCmd);
@@ -2753,6 +2757,7 @@ public final class OreoEssentials extends JavaPlugin {
     public RtpPendingService getRtpPendingService() { return rtpPendingService; }
     public fr.elias.oreoEssentials.modules.rtp.RtpCrossServerBridge getRtpBridge() { return rtpBridge; }
     public fr.elias.oreoEssentials.modules.shards.OreoShardsModule getShardsModule() { return shardsModule; }
+    public CommandToggleService getCommandToggleService() { return commandToggleService; }
     public Economy getVaultEconomy() { return vaultEconomy; }
     public CurrencyPlaceholderExpansion getCurrencyPlaceholders() { return currencyPlaceholders; }
 

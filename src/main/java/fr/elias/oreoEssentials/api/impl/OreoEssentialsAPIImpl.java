@@ -146,4 +146,23 @@ public class OreoEssentialsAPIImpl implements OreoEssentialsAPI {
     @Override public @Nullable IPortalsAPI portals() { var s = plugin.getPortalsManager(); return s == null ? null : new PortalsAPIImpl(s); }
     @Override public @Nullable IPlayerWarpsAPI playerWarps() { var s = plugin.getPlayerWarpService(); return s == null ? null : new PlayerWarpsAPIImpl(s); }
     @Override public @Nullable IPlayerVaultsAPI playerVaults() { var s = plugin.getPlayervaultsService(); return s == null ? null : new PlayerVaultsAPIImpl(s); }
+    @Override public @Nullable ICommandToggleAPI commandToggle() { var s = plugin.getCommandToggleService(); return s == null ? null : new CommandToggleAPIImpl(s); }
+    @Override public @Nullable IInteractiveCommandsAPI interactiveCommands() { var s = plugin.getIcManager(); return s == null ? null : new InteractiveCommandsAPIImpl(s); }
+    @Override public @Nullable IBackAPI back() { var s = plugin.getBackService(); return s == null ? null : new BackAPIImpl(s); }
+    @Override public @Nullable IDeathBackAPI deathBack() { var s = plugin.getDeathBackService(); return s == null ? null : new DeathBackAPIImpl(s); }
+    @Override public @Nullable IIgnoreAPI ignore() { var s = plugin.getIgnoreService(); return s == null ? null : new IgnoreAPIImpl(s); }
+    @Override public @Nullable IMailAPI mail() { var s = plugin.getMailService(); return s == null ? null : new MailAPIImpl(s); }
+    @Override public @Nullable IPlaytimeAPI playtime() {
+        var tracker = plugin.getPlaytimeTracker();
+        var rewards = plugin.getPlaytimeRewardsService();
+        return (tracker == null || rewards == null) ? null : new PlaytimeAPIImpl(tracker, rewards);
+    }
+    @Override public @Nullable IScoreboardAPI scoreboard() { var s = plugin.getScoreboardService(); return s == null ? null : new ScoreboardAPIImpl(s); }
+    @Override public @Nullable IShardsAPI shards() { var s = plugin.getShardsModule(); return s == null ? null : new ShardsAPIImpl(s); }
+    @Override public @Nullable ITempFlyAPI tempFly() { var s = plugin.getTempFlyService(); return s == null ? null : new TempFlyAPIImpl(s); }
+    @Override public @Nullable IWarningsAPI warnings() { var s = plugin.getWarnService(); return s == null ? null : new WarningsAPIImpl(s); }
+    @Override public @Nullable IAutoRebootAPI autoReboot() { var s = plugin.getAutoRebootService(); return s == null ? null : new AutoRebootAPIImpl(s); }
+    @Override public @Nullable IAliasesAPI aliases() { var s = plugin.getAliasService(); return s == null ? null : new AliasesAPIImpl(s); }
+    @Override public @Nullable IVanishAPI vanish() { var s = plugin.getVanishService(); return s == null ? null : new VanishAPIImpl(s); }
+    @Override public @Nullable IFreezeAPI freeze() { var s = plugin.getFreezeService(); return s == null ? null : new FreezeAPIImpl(s); }
 }
