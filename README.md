@@ -1,20 +1,5 @@
 # 🍪 OreoEssentials
 
-> **LICENSE:** https://docs.oreostudios.fr/oreoessentials/general-license/general-license-oreoessentials
-
-<p align="center">
-  <img width="500" height="500" alt="OreoEssentials logo" src="https://github.com/user-attachments/assets/dd1bd76b-3602-4019-95c6-36337faa1222" />
-</p>
-
-<p align="center">
-  <strong>The most advanced all-in-one Essentials plugin for Paper 1.21+</strong><br />
-  Free &amp; open-source plugin by <strong>Oreo Studios</strong>
-</p>
-
-<p align="center">
-  Documentation: <a href="https://docs.oreostudios.fr/oreoessentials/">https://docs.oreostudios.fr/oreoessentials/</a>
-</p>
-
 ---
 
 > ## ⛔ FORKING POLICY — READ BEFORE ANYTHING ELSE
