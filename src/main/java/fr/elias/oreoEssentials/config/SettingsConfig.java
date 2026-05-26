@@ -34,6 +34,14 @@ public class SettingsConfig {
         cfg = YamlConfiguration.loadConfiguration(file);
     }
 
+    public void save() {
+        try {
+            cfg.save(file);
+        } catch (java.io.IOException e) {
+            plugin.getLogger().warning("[ConfigPatch] Failed to save settings.yml: " + e.getMessage());
+        }
+    }
+
     public FileConfiguration raw() {
         return cfg;
     }

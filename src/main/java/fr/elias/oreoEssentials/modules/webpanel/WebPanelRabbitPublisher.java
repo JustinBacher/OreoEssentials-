@@ -131,6 +131,24 @@ public class WebPanelRabbitPublisher {
         }
     }
 
+    /**
+     * Publishes a config file's content back to the backend on the sync queue.
+     * Called by the plugin after receiving a CONFIG_FETCH request.
+     */
+    public void publishConfigFileSync(String filename, String content) {
+        try (Channel channel = connection.createChannel()) {
+            channel.queueDeclare(SYNC_QUEUE, true, false, false, null);
+            JsonObject payload = new JsonObject();
+            payload.addProperty("type",     "config_file_sync");
+            payload.addProperty("filename", filename);
+            payload.addProperty("content",  content);
+            channel.basicPublish("", SYNC_QUEUE, MessageProperties.PERSISTENT_TEXT_PLAIN,
+                    payload.toString().getBytes(StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            logger.warning("[WebPanel-AMQP] Config file sync publish failed for " + filename + ": " + e.getMessage());
+        }
+    }
+
     /** Call on plugin disable. */
     public void close() {
         try { if (actionConsumerChannel != null && actionConsumerChannel.isOpen()) actionConsumerChannel.close(); } catch (Exception ignored) {}

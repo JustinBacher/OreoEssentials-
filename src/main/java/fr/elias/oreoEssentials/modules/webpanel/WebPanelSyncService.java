@@ -78,6 +78,24 @@ public class WebPanelSyncService implements Listener {
                             return;
                         }
 
+                        // ── Config patch (no playerUuid) ───────────────────────────────────
+                        if ("CONFIG_PATCH".equals(type)) {
+                            handleConfigPatch(action);
+                            return;
+                        }
+
+                        // ── Fetch config files from plugin ─────────────────────────────────
+                        if ("CONFIG_FETCH".equals(type)) {
+                            handleConfigFetch(action);
+                            return;
+                        }
+
+                        // ── Write a config file pushed from the panel ──────────────────────
+                        if ("CONFIG_FILE_PUSH".equals(type)) {
+                            handleConfigFilePush(action);
+                            return;
+                        }
+
                         // ── Player-targeted actions ────────────────────────────────────────
                         String uuidStr = action.get("playerUuid").getAsString();
                         String mat     = action.has("material") ? action.get("material").getAsString() : null;
@@ -859,6 +877,157 @@ public class WebPanelSyncService implements Listener {
             OreScheduler.runLaterForEntity(plugin, player, () -> syncPlayer(player, true), 1L);
         }
         return true;
+    }
+
+    // ─── Config patch ─────────────────────────────────────────────────────────
+
+    /**
+     * Applies a CONFIG_PATCH message received from the web panel via RabbitMQ.
+     * Routes keys to settings.yml (features.*, auto-reboot.*, performance.*, maintenance.*)
+     * or config.yml (everything else). Saves and reloads on the main thread.
+     */
+    private void handleConfigPatch(JsonObject action) {
+        if (!action.has("settings") || action.get("settings").isJsonNull()) {
+            plugin.getLogger().warning("[WebPanel] CONFIG_PATCH received with no settings.");
+            return;
+        }
+        JsonObject settings = action.getAsJsonObject("settings");
+        if (settings == null || settings.entrySet().isEmpty()) return;
+
+        java.util.Map<String, Object> settingsYml = new java.util.LinkedHashMap<>();
+        java.util.Map<String, Object> configYml   = new java.util.LinkedHashMap<>();
+
+        for (java.util.Map.Entry<String, com.google.gson.JsonElement> entry : settings.entrySet()) {
+            String key = entry.getKey();
+            com.google.gson.JsonElement el = entry.getValue();
+
+            Object value;
+            if (el.isJsonNull()) {
+                value = null;
+            } else if (el.isJsonPrimitive()) {
+                com.google.gson.JsonPrimitive prim = el.getAsJsonPrimitive();
+                if (prim.isBoolean()) {
+                    value = prim.getAsBoolean();
+                } else if (prim.isNumber()) {
+                    Number n = prim.getAsNumber();
+                    if (n.doubleValue() == Math.floor(n.doubleValue()) && !Double.isInfinite(n.doubleValue())) {
+                        value = n.intValue();
+                    } else {
+                        value = n.doubleValue();
+                    }
+                } else {
+                    value = prim.getAsString();
+                }
+            } else if (el.isJsonArray()) {
+                java.util.List<String> list = new java.util.ArrayList<>();
+                for (com.google.gson.JsonElement item : el.getAsJsonArray()) {
+                    list.add(item.isJsonNull() ? "" : item.getAsString());
+                }
+                value = list;
+            } else {
+                value = el.toString();
+            }
+
+            boolean toSettingsYml = key.startsWith("features.")
+                    || key.startsWith("auto-reboot.")
+                    || key.startsWith("performance.")
+                    || key.startsWith("maintenance.");
+
+            if (toSettingsYml) settingsYml.put(key, value);
+            else configYml.put(key, value);
+        }
+
+        OreScheduler.run(plugin, () -> {
+            if (!settingsYml.isEmpty()) {
+                org.bukkit.configuration.file.FileConfiguration raw = plugin.getSettingsConfig().raw();
+                for (java.util.Map.Entry<String, Object> e : settingsYml.entrySet()) {
+                    raw.set(e.getKey(), e.getValue());
+                }
+                plugin.getSettingsConfig().save();
+                plugin.getSettingsConfig().reload();
+            }
+
+            if (!configYml.isEmpty()) {
+                for (java.util.Map.Entry<String, Object> e : configYml.entrySet()) {
+                    plugin.getConfig().set(e.getKey(), e.getValue());
+                }
+                plugin.saveConfig();
+                plugin.reloadConfig();
+            }
+
+            plugin.getLogger().info("[WebPanel] CONFIG_PATCH applied — settings.yml: "
+                    + settingsYml.size() + " key(s), config.yml: " + configYml.size() + " key(s).");
+        });
+    }
+
+    /**
+     * Handles CONFIG_FETCH: reads each requested file from disk and sends its
+     * content back to the backend on the sync queue.
+     */
+    private void handleConfigFetch(JsonObject action) {
+        java.util.List<String> files = new java.util.ArrayList<>();
+        if (action.has("files") && action.get("files").isJsonArray()) {
+            for (com.google.gson.JsonElement el : action.getAsJsonArray("files")) {
+                files.add(el.getAsString());
+            }
+        }
+        if (files.isEmpty()) return;
+
+        final WebPanelRabbitPublisher pub = rabbitPublisher;
+        OreScheduler.runAsync(plugin, () -> {
+            int sent = 0;
+            for (String filename : files) {
+                java.io.File f = new java.io.File(plugin.getDataFolder(), filename);
+                if (!f.exists()) continue;
+                try {
+                    String content = new String(
+                            java.nio.file.Files.readAllBytes(f.toPath()),
+                            java.nio.charset.StandardCharsets.UTF_8);
+                    if (pub != null) {
+                        pub.publishConfigFileSync(filename, content);
+                        sent++;
+                    }
+                } catch (Exception e) {
+                    plugin.getLogger().warning("[WebPanel] CONFIG_FETCH: failed to read " + filename + ": " + e.getMessage());
+                }
+            }
+            plugin.getLogger().info("[WebPanel] CONFIG_FETCH: sent " + sent + "/" + files.size() + " file(s) to backend.");
+        });
+    }
+
+    /**
+     * Handles CONFIG_FILE_PUSH: writes the received YAML content to the plugin's
+     * data folder and reloads the affected config.
+     */
+    private void handleConfigFilePush(JsonObject action) {
+        String filename = action.has("filename") ? action.get("filename").getAsString() : null;
+        String content  = action.has("content")  ? action.get("content").getAsString()  : null;
+        if (filename == null || content == null || content.isBlank()) return;
+
+        // Prevent path traversal
+        if (filename.contains("/") || filename.contains("\\") || filename.contains("..")) {
+            plugin.getLogger().warning("[WebPanel] CONFIG_FILE_PUSH rejected — unsafe filename: " + filename);
+            return;
+        }
+
+        OreScheduler.runAsync(plugin, () -> {
+            try {
+                java.io.File configFile = new java.io.File(plugin.getDataFolder(), filename);
+                java.nio.file.Files.write(configFile.toPath(),
+                        content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                // Reload on main thread
+                OreScheduler.run(plugin, () -> {
+                    if ("config.yml".equals(filename)) {
+                        plugin.reloadConfig();
+                    } else if ("settings.yml".equals(filename)) {
+                        plugin.getSettingsConfig().reload();
+                    }
+                    plugin.getLogger().info("[WebPanel] CONFIG_FILE_PUSH: '" + filename + "' written and reloaded.");
+                });
+            } catch (Exception e) {
+                plugin.getLogger().warning("[WebPanel] CONFIG_FILE_PUSH: failed to write '" + filename + "': " + e.getMessage());
+            }
+        });
     }
 
     // ─── LuckPerms integration ────────────────────────────────────────────────
