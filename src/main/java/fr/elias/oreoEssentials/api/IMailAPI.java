@@ -1,10 +1,11 @@
 package fr.elias.oreoEssentials.api;
 
-import fr.elias.oreoEssentials.modules.mail.MailService;
+import fr.elias.oreoEssentials.modules.mail.model.MailMessage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * API for the Mail module — in-game mail between players.
@@ -14,39 +15,33 @@ import java.util.UUID;
 public interface IMailAPI {
 
     /**
-     * Sends a mail message to the recipient.
-     *
-     * @param recipient   recipient UUID
-     * @param senderName  display name of the sender
-     * @param senderUuid  UUID of the sender (may be {@code null} for system mail)
-     * @param message     mail body
+     * Sends a text mail to the recipient (works for offline players).
      */
-    void sendMail(@NotNull UUID recipient, @NotNull String senderName, UUID senderUuid, @NotNull String message);
+    @NotNull CompletableFuture<Void> sendMail(@NotNull UUID recipient, @NotNull String senderName,
+                                               UUID senderUuid, @NotNull String message);
 
     /**
-     * Returns an unmodifiable list of mail messages for the player.
+     * Returns a future that resolves to this player's mailbox, newest first.
      */
-    @NotNull List<MailService.MailMessage> getMail(@NotNull UUID playerId);
+    @NotNull CompletableFuture<List<MailMessage>> getMail(@NotNull UUID playerId);
 
     /**
-     * Returns the number of unread messages for the player.
+     * Returns a future that resolves to the number of unread messages.
      */
-    int unreadCount(@NotNull UUID playerId);
+    @NotNull CompletableFuture<Long> unreadCount(@NotNull UUID playerId);
 
     /**
      * Marks all messages for the player as read.
      */
-    void markAllRead(@NotNull UUID playerId);
+    @NotNull CompletableFuture<Void> markAllRead(@NotNull UUID playerId);
 
     /**
-     * Removes the message at {@code index} from the player's inbox.
-     *
-     * @return {@code true} if the index was valid and the message was removed
+     * Deletes a specific mail by its ID.
      */
-    boolean deleteMail(@NotNull UUID playerId, int index);
+    @NotNull CompletableFuture<Void> deleteMail(@NotNull UUID playerId, @NotNull String mailId);
 
     /**
      * Clears all mail for the player.
      */
-    void clearMail(@NotNull UUID playerId);
+    @NotNull CompletableFuture<Void> clearMail(@NotNull UUID playerId);
 }

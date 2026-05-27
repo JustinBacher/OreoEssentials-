@@ -200,6 +200,9 @@ public final class OreoEssentials extends JavaPlugin {
 
     private fr.elias.oreoEssentials.modules.mail.MailService mailService;
     public fr.elias.oreoEssentials.modules.mail.MailService getMailService() { return mailService; }
+    private fr.elias.oreoEssentials.modules.mail.MailListener mailListener;
+
+    public com.mongodb.client.MongoClient getHomesMongoClient() { return homesMongoClient; }
 
     private fr.elias.oreoEssentials.modules.punishment.PunishmentLogger punishmentLogger;
     public fr.elias.oreoEssentials.modules.punishment.PunishmentLogger getPunishmentLogger() { return punishmentLogger; }
@@ -290,6 +293,9 @@ public final class OreoEssentials extends JavaPlugin {
     private DeathBackService deathBackService;
     private GodService godService;
     private CommandManager commands;
+
+    private fr.elias.oreoEssentials.modules.grouprtp.GroupRtpModule groupRtpModule;
+    public  fr.elias.oreoEssentials.modules.grouprtp.GroupRtpModule getGroupRtpModule() { return groupRtpModule; }
 
     private TpaCrossServerBroker tpaBroker;
     public TpaCrossServerBroker getTpaBroker() { return tpaBroker; }
@@ -472,6 +478,7 @@ public final class OreoEssentials extends JavaPlugin {
         initCommands();
         initJails();
         initPortals();
+        initGroupRtp();
         initJumpPads();
         initPlayerVaults();
         initRtp();
@@ -958,12 +965,11 @@ public final class OreoEssentials extends JavaPlugin {
 
     private void initMail() {
         try {
-            this.mailService = new fr.elias.oreoEssentials.modules.mail.MailService(this);
-            var mailService  = this.mailService;
-            var mailCmd      = new fr.elias.oreoEssentials.modules.mail.MailCommand(mailService);
-            var mailListener = new fr.elias.oreoEssentials.modules.mail.MailListener(mailService);
+            this.mailService  = new fr.elias.oreoEssentials.modules.mail.MailService(this);
+            this.mailListener = new fr.elias.oreoEssentials.modules.mail.MailListener(this, this.mailService);
+            var mailCmd       = new fr.elias.oreoEssentials.modules.mail.MailCommand(this, this.mailService);
             this.commands.register(mailCmd);
-            getServer().getPluginManager().registerEvents(mailListener, this);
+            getServer().getPluginManager().registerEvents(this.mailListener, this);
             getLogger().info("[Mail] Initialized.");
         } catch (Throwable t) {
             getLogger().severe("[Mail] Failed to initialize: " + t.getMessage());
@@ -1581,6 +1587,17 @@ public final class OreoEssentials extends JavaPlugin {
             getLogger().info("[Orders] Cross-server sync subscribed.");
         }
 
+        // Mail delivery notifications from other servers
+        if (this.mailListener != null) {
+            this.packetManager.subscribe(
+                    fr.elias.oreoEssentials.modules.mail.rabbitmq.MailDeliveryPacket.class,
+                    (channel, pkt) -> {
+                        try { this.mailListener.onMailDelivery(pkt); }
+                        catch (Throwable t) { getLogger().warning("[Mail] Failed to handle MailDeliveryPacket: " + t.getMessage()); }
+                    });
+            getLogger().info("[Mail] Cross-server delivery subscribed.");
+        }
+
         this.packetManager.init();
 
         try { if (this.afkPoolService != null) this.afkPoolService.tryHookCrossServerNow(); }
@@ -2021,6 +2038,15 @@ public final class OreoEssentials extends JavaPlugin {
         }
     }
 
+    private void initGroupRtp() {
+        try {
+            this.groupRtpModule = new fr.elias.oreoEssentials.modules.grouprtp.GroupRtpModule(this);
+            this.groupRtpModule.init();
+        } catch (Throwable t) {
+            getLogger().severe("[GroupRTP] Failed to initialize: " + t.getMessage());
+        }
+    }
+
     private void initJumpPads() {
         this.jumpPads = new fr.elias.oreoEssentials.modules.jumpads.JumpPadsManager(this);
         getServer().getPluginManager().registerEvents(new fr.elias.oreoEssentials.modules.jumpads.JumpPadsListener(this.jumpPads), this);
@@ -2377,7 +2403,9 @@ public final class OreoEssentials extends JavaPlugin {
         pm.registerPacket(fr.elias.oreoEssentials.modules.auctionhouse.rabbitmq.AuctionSyncPacket.class, fr.elias.oreoEssentials.modules.auctionhouse.rabbitmq.AuctionSyncPacket::new);
         pm.registerPacket(fr.elias.oreoEssentials.modules.orders.rabbitmq.OrderSyncPacket.class, fr.elias.oreoEssentials.modules.orders.rabbitmq.OrderSyncPacket::new);
         pm.registerPacket(fr.elias.oreoEssentials.modules.portals.rabbit.PortalTeleportPacket.class, fr.elias.oreoEssentials.modules.portals.rabbit.PortalTeleportPacket::new);
-        getLogger().info("[RABBIT] Registered 33 packet types deterministically");
+        pm.registerPacket(fr.elias.oreoEssentials.modules.mail.rabbitmq.MailDeliveryPacket.class, fr.elias.oreoEssentials.modules.mail.rabbitmq.MailDeliveryPacket::new);
+        pm.registerPacket(fr.elias.oreoEssentials.modules.grouprtp.rabbit.GroupRtpSyncPacket.class, fr.elias.oreoEssentials.modules.grouprtp.rabbit.GroupRtpSyncPacket::new);
+        getLogger().info("[RABBIT] Registered 35 packet types deterministically");
     }
 
     // -------------------------------------------------------------------------

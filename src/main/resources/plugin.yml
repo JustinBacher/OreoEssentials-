@@ -808,6 +808,7 @@ permissions:
       oreo.kit.claim: true
       oreo.kit.bypasscooldown: true
       oreo.rtp: true
+      oreo.grouprtp.use: true
       oreo.ec: true
       oreo.sync: true
       oreo.afk: true
@@ -840,7 +841,10 @@ permissions:
       oreo.help: true
       oreo.help.admin: true
       oreo.mail: true
+      oreo.mail.send: true
+      oreo.mail.senditem: true
       oreo.mail.clear: true
+      oreo.mail.admin: true
       oreo.rules: true
       oreo.rules.admin: true
       oreo.motd: true
@@ -942,6 +946,14 @@ permissions:
   # RTP & EC
   oreo.rtp:                 { default: true }
   oreo.ec:                  { default: true }
+
+  # Group RTP Portals
+  oreo.grouprtp.use:
+    description: Enter and use Group RTP Portals
+    default: true
+  oreo.grouprtp.admin:
+    description: Admin access for Group RTP Portals (/grouprtp)
+    default: op
 
   # Optional rank/tier nodes (used by RTP radius & EnderChest rows)
   oreo.tier.vip:            { default: false }
@@ -1227,11 +1239,20 @@ permissions:
 
   # Mail
   oreo.mail:
-    description: Use /mail to send and read mail
+    description: Open the mailbox GUI (/mail)
+    default: true
+  oreo.mail.send:
+    description: Send text mail to other players (/mail send)
+    default: true
+  oreo.mail.senditem:
+    description: Send item mail to other players (/mail senditem)
     default: true
   oreo.mail.clear:
-    description: Use /mail clear to delete all messages
+    description: Clear your own mailbox (/mail clear)
     default: true
+  oreo.mail.admin:
+    description: Admin mail commands — broadcast mail to all players
+    default: op
 
   # Rules
   oreo.rules:

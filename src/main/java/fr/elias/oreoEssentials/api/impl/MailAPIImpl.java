@@ -2,19 +2,47 @@ package fr.elias.oreoEssentials.api.impl;
 
 import fr.elias.oreoEssentials.api.IMailAPI;
 import fr.elias.oreoEssentials.modules.mail.MailService;
+import fr.elias.oreoEssentials.modules.mail.model.MailMessage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
-public class MailAPIImpl implements IMailAPI {
+public final class MailAPIImpl implements IMailAPI {
+
     private final MailService svc;
+
     public MailAPIImpl(MailService svc) { this.svc = svc; }
 
-    @Override public void sendMail(@NotNull UUID recipient, @NotNull String senderName, UUID senderUuid, @NotNull String message) { svc.sendMail(recipient, senderName, senderUuid, message); }
-    @Override public @NotNull List<MailService.MailMessage> getMail(@NotNull UUID playerId) { return svc.getMail(playerId); }
-    @Override public int unreadCount(@NotNull UUID playerId) { return svc.unreadCount(playerId); }
-    @Override public void markAllRead(@NotNull UUID playerId) { svc.markAllRead(playerId); }
-    @Override public boolean deleteMail(@NotNull UUID playerId, int index) { return svc.deleteMail(playerId, index); }
-    @Override public void clearMail(@NotNull UUID playerId) { svc.clearMail(playerId); }
+    @Override
+    public @NotNull CompletableFuture<Void> sendMail(@NotNull UUID recipient, @NotNull String senderName,
+                                                      UUID senderUuid, @NotNull String message) {
+        return svc.sendTextMail(senderUuid, senderName, recipient, message);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<List<MailMessage>> getMail(@NotNull UUID playerId) {
+        return svc.getMailbox(playerId);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Long> unreadCount(@NotNull UUID playerId) {
+        return svc.unreadCountAsync(playerId);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Void> markAllRead(@NotNull UUID playerId) {
+        return svc.markAllRead(playerId);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Void> deleteMail(@NotNull UUID playerId, @NotNull String mailId) {
+        return svc.deleteMail(playerId, mailId);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Void> clearMail(@NotNull UUID playerId) {
+        return svc.clearMail(playerId);
+    }
 }
