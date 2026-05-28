@@ -14,7 +14,7 @@ softdepend:
   - PacketEvents
   - Nexo
 
-loadbefore: [EconomyShopGUI, VendingMachines, PerfRankNPCs, ajLeaderboards]
+loadbefore: [EconomyShopGUI, VendingMachines, PerfRankNPCs, ajLeaderboards, ShopGUIPlus, DeluxeMenus, UltraEconomy, PlayerPoints, BetterShop, zShop, ShopKeepers, QuickShop, QuickShopHikari, GriefPrevention, Lands, Towny, BentoBox, AuctionHouse, CMI, JobsReborn, mcMMO, ChestShop, CrazyAuctions, SuperiorSkyblock2, IridiumSkyBlock, Guilds, Quests, VotingPlugin, EpicCrates, CrazyCrates, AdvancedEnchantments, Rankup, DeluxeRankup, Slimefun, Residence, HuskClaims, Skript, BetonQuest, MythicMobs, LevelledMobs, CoinsEngine, PlayerWarps]
 
 commands:
   spawn:
