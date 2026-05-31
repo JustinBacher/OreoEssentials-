@@ -72,6 +72,26 @@ public final class CustomCraftingService {
         }
     }
 
+    /**
+     * Save to disk on the calling (async) thread, then switch to the main thread
+     * for Bukkit.addRecipe() which requires the main thread.
+     * Returns false immediately if the recipe is invalid or IO fails.
+     */
+    public boolean saveAndRegisterAsync(CustomRecipe r) {
+        if (!r.isValid()) return false;
+        try {
+            storage.save(r);
+            recipes.put(r.getName(), r);
+            unregister(r.getName());
+            // addRecipe must run on the main thread
+            fr.elias.oreoEssentials.util.OreScheduler.run(plugin, () -> registerBukkitRecipe(r));
+            return true;
+        } catch (IOException e) {
+            plugin.getLogger().severe("[CustomCraft] Failed saving recipe " + r.getName() + ": " + e.getMessage());
+            return false;
+        }
+    }
+
     public Optional<CustomRecipe> get(String name) { return Optional.ofNullable(recipes.get(name)); }
     public Set<String> allNames() { return new TreeSet<>(recipes.keySet()); }
 

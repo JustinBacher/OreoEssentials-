@@ -471,9 +471,8 @@ public final class OreoEssentials extends JavaPlugin {
         initEnderChest();
         initInventorySync();
         initCoreServices();
-        initRabbitMQ();
+        initRabbitMQ();       // async – initBrokers() called inside callback
         initCurrencySystem();
-        initBrokers();
         fr.elias.oreoEssentials.commands.core.admins.OeWorldCommand.loadCustomWorlds(this);
         initCommands();
         initJails();
@@ -1496,122 +1495,130 @@ public final class OreoEssentials extends JavaPlugin {
             return;
         }
 
-        RabbitMQSender rabbit = new RabbitMQSender(
-                getConfig().getString("rabbitmq.uri"),
-                configService.serverName(),
-                configService::isDebugEnabled
-        );
+        // Start in local mode immediately so the server thread is never blocked.
+        // The RabbitMQ connection attempt runs async and upgrades to cross-server
+        // mode on the main thread if it succeeds.
         if (this.offlinePlayerCache == null) this.offlinePlayerCache = new OfflinePlayerCache();
-        this.packetManager = new PacketManager(this, rabbit);
+        this.packetManager = null; this.networkCountReceiver = null;
+        this.invseeBroker  = null; this.invseeService = new InvseeService(this, null);
+        getLogger().info("[RABBIT] Connecting async (non-blocking)...");
 
-        if (!rabbit.connect()) {
-            getLogger().severe("[RABBIT] Connect failed; continuing without messaging.");
-            this.packetManager = null; this.networkCountReceiver = null;
-            this.invseeBroker  = null; this.invseeService = new InvseeService(this, null);
-            getLogger().info("[INVSEE] Local mode (RabbitMQ connection failed)");
-            return;
-        }
+        final String uri        = getConfig().getString("rabbitmq.uri");
+        final String serverName = configService.serverName();
 
-        registerAllPacketsDeterministically(this.packetManager);
+        fr.elias.oreoEssentials.util.OreScheduler.runAsync(this, () -> {
+            RabbitMQSender rabbit = new RabbitMQSender(uri, serverName, configService::isDebugEnabled);
+            boolean connected = rabbit.connect();
 
-        try {
-            this.networkCountReceiver = new fr.elias.oreoEssentials.network.NetworkCountReceiver(this, getConfig().getString("rabbitmq.uri"));
-            if (this.networkCountReceiver.start()) { getLogger().info("[NetworkCountReceiver] Listening for proxy player counts."); }
-            else { getLogger().warning("[NetworkCountReceiver] Failed to start."); this.networkCountReceiver = null; }
-        } catch (Throwable t) { getLogger().warning("[NetworkCountReceiver] Error: " + t.getMessage()); this.networkCountReceiver = null; }
+            fr.elias.oreoEssentials.util.OreScheduler.run(this, () -> {
+                if (!connected) {
+                    getLogger().severe("[RABBIT] Connect failed; continuing without messaging.");
+                    getLogger().info("[INVSEE] Local mode (RabbitMQ connection failed)");
+                    initBrokers();
+                    return;
+                }
 
-        if (invSyncEnabled) {
-            try {
-                this.invseeBroker  = new InvseeCrossServerBroker(this, this.packetManager, configService.serverName(), null);
-                this.invseeService = new InvseeService(this, this.invseeBroker);
-                this.invseeBroker.setService(this.invseeService);
-                getLogger().info("[INVSEE] Cross-server enabled.");
-            } catch (Throwable t) {
-                this.invseeBroker  = null; this.invseeService = new InvseeService(this, null);
-                getLogger().warning("[INVSEE] Cross-server failed, using local mode: " + t.getMessage());
-            }
-        } else {
-            this.invseeBroker = null; this.invseeService = new InvseeService(this, null);
-            getLogger().info("[INVSEE] Local mode (invSyncEnabled=false)");
-        }
+                this.packetManager = new PacketManager(this, rabbit);
+                registerAllPacketsDeterministically(this.packetManager);
 
-        this.packetManager.subscribeChannel(PacketChannels.GLOBAL);
-        this.packetManager.subscribeChannel(fr.elias.oreoEssentials.rabbitmq.channel.PacketChannel.individual(configService.serverName()));
-        getLogger().info("[RABBIT] Subscribed channels: global + individual(" + configService.serverName() + ")");
+                try {
+                    this.networkCountReceiver = new fr.elias.oreoEssentials.network.NetworkCountReceiver(this, uri);
+                    if (this.networkCountReceiver.start()) { getLogger().info("[NetworkCountReceiver] Listening for proxy player counts."); }
+                    else { getLogger().warning("[NetworkCountReceiver] Failed to start."); this.networkCountReceiver = null; }
+                } catch (Throwable t) { getLogger().warning("[NetworkCountReceiver] Error: " + t.getMessage()); this.networkCountReceiver = null; }
 
-        if (this.invseeBroker != null) {
-            this.packetManager.subscribe(InvseeOpenRequestPacket.class, (channel, pkt) -> this.invseeBroker.handleOpenRequest(pkt));
-            this.packetManager.subscribe(InvseeStatePacket.class,       (channel, pkt) -> this.invseeBroker.handleState(pkt));
-            this.packetManager.subscribe(InvseeEditPacket.class,        (channel, pkt) -> this.invseeBroker.handleEdit(pkt));
-            getLogger().info("[INVSEE] Subscribed Invsee packets.");
-        }
+                if (invSyncEnabled) {
+                    try {
+                        this.invseeBroker  = new InvseeCrossServerBroker(this, this.packetManager, configService.serverName(), null);
+                        this.invseeService = new InvseeService(this, this.invseeBroker);
+                        this.invseeBroker.setService(this.invseeService);
+                        getLogger().info("[INVSEE] Cross-server enabled.");
+                    } catch (Throwable t) {
+                        this.invseeBroker  = null; this.invseeService = new InvseeService(this, null);
+                        getLogger().warning("[INVSEE] Cross-server failed, using local mode: " + t.getMessage());
+                    }
+                } else {
+                    this.invseeBroker = null; this.invseeService = new InvseeService(this, null);
+                    getLogger().info("[INVSEE] Local mode (invSyncEnabled=false)");
+                }
 
-        this.packetManager.subscribe(fr.elias.oreoEssentials.rabbitmq.packet.impl.SendRemoteMessagePacket.class, new RemoteMessagePacketHandler());
-        this.packetManager.subscribe(fr.elias.oreoEssentials.modules.chat.msg.CrossServerMsgPacket.class, new fr.elias.oreoEssentials.modules.chat.msg.CrossServerMsgHandler(messageService));
-        this.packetManager.subscribe(TradeStartPacket.class,   new TradeStartPacketHandler(this));
-        this.packetManager.subscribe(PlayerJoinPacket.class,   new PlayerJoinPacketHandler(this));
-        this.packetManager.subscribe(PlayerQuitPacket.class,   new PlayerQuitPacketHandler(this));
-        if (this._vanishService != null) {
-            this.packetManager.subscribe(
-                    fr.elias.oreoEssentials.modules.vanish.rabbit.VanishSyncPacket.class,
-                    (channel, pkt) -> this._vanishService.handleRemoteState(pkt.getPlayerId(), pkt.isVanished(), pkt.getSourceServer()));
-            getLogger().info("[VANISH] Cross-server sync subscribed.");
-        }
-        this.packetManager.subscribe(fr.elias.oreoEssentials.rabbitmq.packet.impl.DeathMessagePacket.class, new fr.elias.oreoEssentials.rabbitmq.handler.DeathMessagePacketHandler(this));
-        this.packetManager.subscribe(TradeInvitePacket.class,  new TradeInvitePacketHandler(this));
-        this.packetManager.subscribe(TradeStatePacket.class,   new TradeStatePacketHandler(this));
-        this.packetManager.subscribe(TradeConfirmPacket.class, new TradeConfirmPacketHandler(this));
-        this.packetManager.subscribe(TradeCancelPacket.class,  new TradeCancelPacketHandler(this));
-        this.packetManager.subscribe(TradeGrantPacket.class,   new TradeGrantPacketHandler(this));
-        this.packetManager.subscribe(TradeClosePacket.class,   new TradeClosePacketHandler(this));
+                this.packetManager.subscribeChannel(PacketChannels.GLOBAL);
+                this.packetManager.subscribeChannel(fr.elias.oreoEssentials.rabbitmq.channel.PacketChannel.individual(configService.serverName()));
+                getLogger().info("[RABBIT] Subscribed channels: global + individual(" + configService.serverName() + ")");
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬ Auction House sync Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-        if (this.auctionHouse != null && this.auctionHouse.enabled()) {
-            this.packetManager.subscribe(
-                    fr.elias.oreoEssentials.modules.auctionhouse.rabbitmq.AuctionSyncPacket.class,
-                    (channel, pkt) -> {
-                        try { this.auctionHouse.applyIncomingSync(pkt); }
-                        catch (Throwable t) { getLogger().warning("[AH] Failed to handle AuctionSyncPacket: " + t.getMessage()); }
-                    });
-            getLogger().info("[AH] Cross-server sync subscribed.");
-        }
+                if (this.invseeBroker != null) {
+                    this.packetManager.subscribe(InvseeOpenRequestPacket.class, (channel, pkt) -> this.invseeBroker.handleOpenRequest(pkt));
+                    this.packetManager.subscribe(InvseeStatePacket.class,       (channel, pkt) -> this.invseeBroker.handleState(pkt));
+                    this.packetManager.subscribe(InvseeEditPacket.class,        (channel, pkt) -> this.invseeBroker.handleEdit(pkt));
+                    getLogger().info("[INVSEE] Subscribed Invsee packets.");
+                }
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬ Orders module cross-server sync Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-        if (this.ordersModule != null && this.ordersModule.enabled()) {
-            this.packetManager.subscribe(
-                    fr.elias.oreoEssentials.modules.orders.rabbitmq.OrderSyncPacket.class,
-                    (channel, pkt) -> {
-                        try { this.ordersModule.getEventBus().onReceive(pkt); }
-                        catch (Throwable t) { getLogger().warning("[Orders] Failed to handle OrderSyncPacket: " + t.getMessage()); }
-                    });
-            getLogger().info("[Orders] Cross-server sync subscribed.");
-        }
+                this.packetManager.subscribe(fr.elias.oreoEssentials.rabbitmq.packet.impl.SendRemoteMessagePacket.class, new RemoteMessagePacketHandler());
+                this.packetManager.subscribe(fr.elias.oreoEssentials.modules.chat.msg.CrossServerMsgPacket.class, new fr.elias.oreoEssentials.modules.chat.msg.CrossServerMsgHandler(messageService));
+                this.packetManager.subscribe(TradeStartPacket.class,   new TradeStartPacketHandler(this));
+                this.packetManager.subscribe(PlayerJoinPacket.class,   new PlayerJoinPacketHandler(this));
+                this.packetManager.subscribe(PlayerQuitPacket.class,   new PlayerQuitPacketHandler(this));
+                if (this._vanishService != null) {
+                    this.packetManager.subscribe(
+                            fr.elias.oreoEssentials.modules.vanish.rabbit.VanishSyncPacket.class,
+                            (channel, pkt) -> this._vanishService.handleRemoteState(pkt.getPlayerId(), pkt.isVanished(), pkt.getSourceServer()));
+                    getLogger().info("[VANISH] Cross-server sync subscribed.");
+                }
+                this.packetManager.subscribe(fr.elias.oreoEssentials.rabbitmq.packet.impl.DeathMessagePacket.class, new fr.elias.oreoEssentials.rabbitmq.handler.DeathMessagePacketHandler(this));
+                this.packetManager.subscribe(TradeInvitePacket.class,  new TradeInvitePacketHandler(this));
+                this.packetManager.subscribe(TradeStatePacket.class,   new TradeStatePacketHandler(this));
+                this.packetManager.subscribe(TradeConfirmPacket.class, new TradeConfirmPacketHandler(this));
+                this.packetManager.subscribe(TradeCancelPacket.class,  new TradeCancelPacketHandler(this));
+                this.packetManager.subscribe(TradeGrantPacket.class,   new TradeGrantPacketHandler(this));
+                this.packetManager.subscribe(TradeClosePacket.class,   new TradeClosePacketHandler(this));
 
-        // Mail delivery notifications from other servers
-        if (this.mailListener != null) {
-            this.packetManager.subscribe(
-                    fr.elias.oreoEssentials.modules.mail.rabbitmq.MailDeliveryPacket.class,
-                    (channel, pkt) -> {
-                        try { this.mailListener.onMailDelivery(pkt); }
-                        catch (Throwable t) { getLogger().warning("[Mail] Failed to handle MailDeliveryPacket: " + t.getMessage()); }
-                    });
-            getLogger().info("[Mail] Cross-server delivery subscribed.");
-        }
+                if (this.auctionHouse != null && this.auctionHouse.enabled()) {
+                    this.packetManager.subscribe(
+                            fr.elias.oreoEssentials.modules.auctionhouse.rabbitmq.AuctionSyncPacket.class,
+                            (channel, pkt) -> {
+                                try { this.auctionHouse.applyIncomingSync(pkt); }
+                                catch (Throwable t) { getLogger().warning("[AH] Failed to handle AuctionSyncPacket: " + t.getMessage()); }
+                            });
+                    getLogger().info("[AH] Cross-server sync subscribed.");
+                }
 
-        this.packetManager.init();
+                if (this.ordersModule != null && this.ordersModule.enabled()) {
+                    this.packetManager.subscribe(
+                            fr.elias.oreoEssentials.modules.orders.rabbitmq.OrderSyncPacket.class,
+                            (channel, pkt) -> {
+                                try { this.ordersModule.getEventBus().onReceive(pkt); }
+                                catch (Throwable t) { getLogger().warning("[Orders] Failed to handle OrderSyncPacket: " + t.getMessage()); }
+                            });
+                    getLogger().info("[Orders] Cross-server sync subscribed.");
+                }
 
-        try { if (this.afkPoolService != null) this.afkPoolService.tryHookCrossServerNow(); }
-        catch (Throwable t) { getLogger().warning("[AfkPool] Failed to hook cross-server handlers: " + t.getMessage()); }
+                // Mail delivery notifications from other servers
+                if (this.mailListener != null) {
+                    this.packetManager.subscribe(
+                            fr.elias.oreoEssentials.modules.mail.rabbitmq.MailDeliveryPacket.class,
+                            (channel, pkt) -> {
+                                try { this.mailListener.onMailDelivery(pkt); }
+                                catch (Throwable t) { getLogger().warning("[Mail] Failed to handle MailDeliveryPacket: " + t.getMessage()); }
+                            });
+                    getLogger().info("[Mail] Cross-server delivery subscribed.");
+                }
 
-        try { if (this.afkService != null) this.afkService.tryHookCrossServerNow(); }
-        catch (Throwable t) { getLogger().warning("[AfkService] Failed to hook cross-server handlers: " + t.getMessage()); }
+                this.packetManager.init();
 
-        try { getLogger().info("[RABBIT] Packet registry checksum=" + this.packetManager.registryChecksum()); }
-        catch (Throwable ignored) {}
+                try { if (this.afkPoolService != null) this.afkPoolService.tryHookCrossServerNow(); }
+                catch (Throwable t) { getLogger().warning("[AfkPool] Failed to hook cross-server handlers: " + t.getMessage()); }
 
-        getLogger().info("[RABBIT] Connected and subscriptions active.");
+                try { if (this.afkService != null) this.afkService.tryHookCrossServerNow(); }
+                catch (Throwable t) { getLogger().warning("[AfkService] Failed to hook cross-server handlers: " + t.getMessage()); }
+
+                try { getLogger().info("[RABBIT] Packet registry checksum=" + this.packetManager.registryChecksum()); }
+                catch (Throwable ignored) {}
+
+                getLogger().info("[RABBIT] Connected and subscriptions active.");
+                initBrokers();
+            }); // end OreScheduler.run (main thread)
+        }); // end OreScheduler.runAsync
     }
-
     private void initBrokers() {
         if (packetManager != null && packetManager.isInitialized()) {
             this.modBridge = new ModBridge(this, packetManager, configService.serverName());

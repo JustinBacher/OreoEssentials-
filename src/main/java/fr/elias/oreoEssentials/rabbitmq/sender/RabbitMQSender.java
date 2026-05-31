@@ -164,6 +164,8 @@ public class RabbitMQSender implements PacketSender {
             factory.setUri(connectionString);
             factory.setAutomaticRecoveryEnabled(true);
             factory.setNetworkRecoveryInterval(5000);
+            factory.setConnectionTimeout(5000);   // 5 s — prevents blocking the server thread on startup
+            factory.setHandshakeTimeout(5000);
 
             connection = factory.newConnection();
             channel = connection.createChannel();

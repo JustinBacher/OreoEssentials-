@@ -296,7 +296,7 @@ public final class CraftDesignerMenu implements InventoryProvider {
         );
 
         Async.run(() -> {
-            boolean ok = service.saveAndRegister(rec);
+            boolean ok = service.saveAndRegisterAsync(rec);
             if (ok) {
                 String mode = shapeless
                         ? Lang.get("customcraft.format.mode.shapeless", "Shapeless")

@@ -3,6 +3,7 @@ package fr.elias.oreoEssentials.services.yaml;
 import fr.elias.oreoEssentials.OreoEssentials;
 import fr.elias.oreoEssentials.modules.playerwarp.PlayerWarp;
 import fr.elias.oreoEssentials.modules.playerwarp.PlayerWarpStorage;
+import fr.elias.oreoEssentials.util.OreScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -41,7 +42,7 @@ public class YamlPlayerWarpStorage implements PlayerWarpStorage {
         this.cfg = YamlConfiguration.loadConfiguration(file);
         // Defer loading by 1 tick so that world-management plugins (e.g. Multiverse)
         // have finished registering their worlds before we resolve Location objects.
-        Bukkit.getScheduler().runTask(plugin, this::loadAllFromFile);
+        OreScheduler.run(plugin, this::loadAllFromFile);
     }
 
 

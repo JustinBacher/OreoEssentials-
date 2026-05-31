@@ -63,7 +63,8 @@ public final class Lang {
             langFolder.mkdirs();
         }
 
-        currentLanguage = plugin.getConfig().getString("language", "en").toLowerCase();
+        currentLanguage = plugin.getConfig().getString("server.language",
+                plugin.getConfig().getString("language", "en")).toLowerCase();
 
         File oldLangFile = new File(plugin.getDataFolder(), "lang.yml");
         File newLangFile = new File(langFolder, "lang_" + currentLanguage + ".yml");
@@ -111,7 +112,8 @@ public final class Lang {
         if (plugin == null) return;
 
         plugin.reloadConfig();
-        currentLanguage = plugin.getConfig().getString("language", "en").toLowerCase();
+        currentLanguage = plugin.getConfig().getString("server.language",
+                plugin.getConfig().getString("language", "en")).toLowerCase();
 
         loadLanguageFile(currentLanguage);
 
