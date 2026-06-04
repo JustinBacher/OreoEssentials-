@@ -14,14 +14,14 @@ nametag:
   position-interval-ticks: 2     # How often entities follow moving players
   visibility-sweep-batch-owners: 8   # Background owner visibility sweeps per refresh
   move-visibility-cooldown-ticks: 5  # Per-player throttle for movement-driven visibility recalcs
-  show-to-self: true             # Whether players see their own nametag
+  show-to-self: false            # Whether players see their own nametag
   view-range: 48.0               # Max distance (blocks) at which nametags are visible
 
   # Each key under layers is one text line above the head.
   # Layers are stacked; higher y-offset = higher above the head.
   layers:
     name:
-      text: "<white>%player_name%</white>"
+      text: "<white>%player_name%</white> "
       y-offset: 2.1
       shadow: false
       see-through: false
