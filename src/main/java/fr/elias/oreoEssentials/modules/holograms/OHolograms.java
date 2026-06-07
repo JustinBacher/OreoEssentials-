@@ -376,12 +376,20 @@ public final class OHolograms implements OHologramsPlugin {
     }
 
     private void unbindPluginCommand(@NotNull String label) {
-        PluginCommand pluginCommand = plugin.getCommand(label);
-        if (pluginCommand == null) {
-            return;
-        }
-        pluginCommand.setExecutor(null);
-        pluginCommand.setTabCompleter(null);
+        try {
+            org.bukkit.command.CommandMap map = plugin.getServer().getCommandMap();
+            if (!(map instanceof org.bukkit.command.SimpleCommandMap scm)) return;
+            java.lang.reflect.Field f = org.bukkit.command.SimpleCommandMap.class.getDeclaredField("knownCommands");
+            f.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, org.bukkit.command.Command> known =
+                    (java.util.Map<String, org.bukkit.command.Command>) f.get(scm);
+            String lower = label.toLowerCase(java.util.Locale.ROOT);
+            known.entrySet().removeIf(e -> {
+                String k = e.getKey().toLowerCase(java.util.Locale.ROOT);
+                return k.equals(lower) || k.endsWith(":" + lower);
+            });
+        } catch (Throwable ignored) {}
     }
 
     private void registerListeners() {

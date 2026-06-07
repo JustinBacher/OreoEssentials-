@@ -2580,9 +2580,7 @@ public final class OreoEssentials extends JavaPlugin {
             String lower = label.toLowerCase(java.util.Locale.ROOT);
             known.entrySet().removeIf(e -> {
                 String k = e.getKey().toLowerCase(java.util.Locale.ROOT);
-                if (!k.equals(lower) && !k.endsWith(":" + lower)) return false;
-                if (!(e.getValue() instanceof org.bukkit.command.PluginCommand pc)) return false;
-                try { return pc.getPlugin() == this; } catch (Throwable ignored) { return false; }
+                return k.equals(lower) || k.endsWith(":" + lower);
             });
         } catch (Throwable ignored) {}
     }
