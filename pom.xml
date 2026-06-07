@@ -6,7 +6,7 @@
 
     <groupId>fr.elias</groupId>
     <artifactId>OreoEssentials</artifactId>
-    <version>5.3-SNAPSHOT</version>
+    <version>5.4-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>OreoEssentials</name>
@@ -47,6 +47,10 @@
                                 <relocation>
                                     <pattern>org.bstats</pattern>
                                     <shadedPattern>fr.elias.oreoessentials.libs.bstats</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>fr.traqueur.commands</pattern>
+                                    <shadedPattern>fr.elias.oreoessentials.libs.commands</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
@@ -167,6 +171,15 @@
         </dependencies>
     </dependencyManagement>
     <dependencies>
+
+        <!-- CommandsAPI — shaded and relocated to fr.elias.oreoessentials.libs.commands -->
+        <dependency>
+            <groupId>fr.traqueur.commands</groupId>
+            <artifactId>platform-spigot</artifactId>
+            <version>5.1.1</version>
+            <scope>compile</scope>
+        </dependency>
+
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>

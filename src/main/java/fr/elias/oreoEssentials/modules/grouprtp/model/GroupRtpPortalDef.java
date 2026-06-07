@@ -3,6 +3,7 @@ package fr.elias.oreoEssentials.modules.grouprtp.model;
 import org.bukkit.Material;
 import org.bukkit.util.BoundingBox;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -111,6 +112,10 @@ public final class GroupRtpPortalDef {
 
     public String msg(String key, String def) {
         return messages.getOrDefault(key, def);
+    }
+
+    public Map<String, String> getMessages() {
+        return Collections.unmodifiableMap(messages);
     }
 
     // ── Getters ───────────────────────────────────────────────────────────────

@@ -1157,28 +1157,20 @@ public final class OreoEssentials extends JavaPlugin {
         }
 
         var killExec = new KillallRecorderCommand(this, killallLogger);
-        getCommand("killallr").setExecutor(killExec);
-        getCommand("killallr").setTabCompleter(killExec);
-        getCommand("killallrlog").setExecutor(new KillallLogViewCommand(killallLogger));
+        commands.registerLegacy("killallr", killExec, killExec);
+        commands.registerLegacy("killallrlog", new KillallLogViewCommand(killallLogger));
 
         final fr.elias.oreoEssentials.modules.mobs.SpawnMobCommand spawnCmd = new fr.elias.oreoEssentials.modules.mobs.SpawnMobCommand();
-        getCommand("spawnmob").setExecutor(spawnCmd);
-        getCommand("spawnmob").setTabCompleter(spawnCmd);
+        commands.registerLegacy("spawnmob", spawnCmd);
     }
 
     private void initClearLag() {
         if (settingsConfig.clearLagEnabled()) {
             try {
                 this.clearLag = new ClearLagManager(this);
-                var olaggCmd = getCommand("olagg");
-                if (olaggCmd != null) {
-                    var olagg = new fr.elias.oreoEssentials.modules.clearlag.ClearLagCommands(clearLag);
-                    olaggCmd.setExecutor(olagg);
-                    olaggCmd.setTabCompleter(olagg);
-                    getLogger().info("[OreoLag] Enabled Ã¢â‚¬â€ /olagg active.");
-                } else {
-                    getLogger().warning("[OreoLag] Command 'olagg' not found in plugin.yml.");
-                }
+                var olagg = new fr.elias.oreoEssentials.modules.clearlag.ClearLagCommands(clearLag);
+                commands.registerLegacy("olagg", olagg);
+                getLogger().info("[OreoLag] Enabled - /olagg active.");
             } catch (Throwable t) {
                 getLogger().warning("[OreoLag] FAILED to initialize: " + t.getMessage());
                 this.clearLag = null;
@@ -1686,6 +1678,18 @@ public final class OreoEssentials extends JavaPlugin {
             }
         }
 
+        if (packetManager != null && packetManager.isInitialized() && this.rtpConfig != null && this.rtpConfig.isCrossServerEnabled()) {
+            try {
+                this.rtpBridge = new fr.elias.oreoEssentials.modules.rtp.RtpCrossServerBridge(this, this.packetManager, this.configService.serverName());
+                getLogger().info("[RTP] Cross-server RTP bridge ready.");
+            } catch (Throwable t) {
+                this.rtpBridge = null;
+                getLogger().warning("[RTP] Failed to init cross-server RTP bridge: " + t.getMessage());
+            }
+        } else {
+            getLogger().info("[RTP] Cross-server RTP bridge disabled (packetManager or config not ready).");
+        }
+
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI") && currencyService != null) {
             OreScheduler.runLater(this, () -> {
                 try {
@@ -1870,102 +1874,80 @@ public final class OreoEssentials extends JavaPlugin {
 
     private void initICModule() {
         this.icManager = new fr.elias.oreoEssentials.modules.ic.ICManager(getDataFolder());
-        fr.elias.oreoEssentials.modules.ic.ICCommand icCmd = new fr.elias.oreoEssentials.modules.ic.ICCommand(icManager);
-        getCommand("ic").setExecutor(icCmd);
-        getCommand("ic").setTabCompleter(icCmd);
+        commands.registerLegacy("ic", new fr.elias.oreoEssentials.modules.ic.ICCommand(icManager));
         getServer().getPluginManager().registerEvents(new fr.elias.oreoEssentials.modules.ic.ICListener(icManager, this), this);
 
-        final var timeCmd = new fr.elias.oreoEssentials.commands.core.admins.OeTimeCommand();
-        getCommand("oetime").setExecutor(timeCmd);
-        getCommand("oetime").setTabCompleter(timeCmd);
+        commands.registerLegacy("oetime", new fr.elias.oreoEssentials.commands.core.admins.OeTimeCommand());
 
         final var weatherCmd = new fr.elias.oreoEssentials.commands.core.admins.WeatherCommand();
         for (String alias : new String[]{"weather", "sun", "rain", "storm"}) {
-            getCommand(alias).setExecutor(weatherCmd);
-            getCommand(alias).setTabCompleter(weatherCmd);
+            commands.registerLegacy(alias, weatherCmd);
         }
 
-        final var fs = new fr.elias.oreoEssentials.commands.core.admins.FlySpeedCommand();
-        getCommand("flyspeed").setExecutor(fs);
-        getCommand("flyspeed").setTabCompleter(fs);
+        commands.registerLegacy("flyspeed", new fr.elias.oreoEssentials.commands.core.admins.FlySpeedCommand());
+        commands.registerLegacy("walkspeed", new fr.elias.oreoEssentials.commands.core.admins.WalkSpeedCommand());
+        commands.registerLegacy("world", new fr.elias.oreoEssentials.commands.core.admins.WorldTeleportCommand());
 
-        final var ws = new fr.elias.oreoEssentials.commands.core.admins.WalkSpeedCommand();
-        getCommand("walkspeed").setExecutor(ws);
-        getCommand("walkspeed").setTabCompleter(ws);
-
-        final var worldCmd = new fr.elias.oreoEssentials.commands.core.admins.WorldTeleportCommand();
-        getCommand("world").setExecutor(worldCmd);
-        getCommand("world").setTabCompleter(worldCmd);
-
-        getCommand("effectme").setExecutor(new fr.elias.oreoEssentials.modules.effects.EffectCommands());
-        getCommand("effectme").setTabCompleter(new fr.elias.oreoEssentials.modules.effects.EffectCommands());
-        getCommand("effectto").setExecutor(new fr.elias.oreoEssentials.modules.effects.EffectCommands());
-        getCommand("effectto").setTabCompleter(new fr.elias.oreoEssentials.modules.effects.EffectCommands());
+        final var effectCmd = new fr.elias.oreoEssentials.modules.effects.EffectCommands();
+        commands.registerLegacy("effectme", effectCmd);
+        commands.registerLegacy("effectto", effectCmd);
     }
 
     private void initMiscCommandsAndTabCompleters(MuteCommand muteCmd, UnmuteCommand unmuteCmd, NickCommand nickCmd) {
-        if (getCommand("oeserver") != null) getCommand("oeserver").setTabCompleter(new ServerProxyCommand(proxyMessenger));
-        getCommand("kick").setTabCompleter(new KickTabCompleter(this));
-        if (getCommand("clear")    != null) getCommand("clear").setTabCompleter(new ClearTabCompleter(this));
+        // Tab-completer overrides for OreoCommands already registered via commands.register().
+        // rewireTab() looks up the command in the CommandMap (no plugin.yml needed).
+        commands.rewireTab("oeserver", new ServerProxyCommand(proxyMessenger));
+        commands.rewireTab("kick",     new KickTabCompleter(this));
+        commands.rewireTab("clear",    new ClearTabCompleter(this));
 
         TpaTabCompleter tpaCompleter = new TpaTabCompleter(this);
-        if (getCommand("tpa")  != null) getCommand("tpa").setTabCompleter(tpaCompleter);
-        if (getCommand("move") != null) getCommand("move").setTabCompleter(tpaCompleter);
-        if (getCommand("tp")   != null) getCommand("tp").setTabCompleter(new TpTabCompleter(this));
+        commands.rewireTab("tpa",  tpaCompleter);
+        commands.rewireTab("move", tpaCompleter);
+        commands.rewireTab("tp",   new TpTabCompleter(this));
+        commands.rewireTab("invlook", new InvlookCommand());
 
-        if (getCommand("invlook") != null) getCommand("invlook").setTabCompleter(new InvlookCommand());
+        commands.rewireTab("balance", (sender, cmd, alias, args) -> {
+            if (args.length == 1 && sender.hasPermission("oreo.balance.others")) {
+                String partial = args[0].toLowerCase(java.util.Locale.ROOT);
+                return org.bukkit.Bukkit.getOnlinePlayers().stream()
+                        .map(org.bukkit.entity.Player::getName)
+                        .filter(n -> n.toLowerCase(java.util.Locale.ROOT).startsWith(partial))
+                        .sorted(String.CASE_INSENSITIVE_ORDER).toList();
+            }
+            return java.util.List.of();
+        });
 
-        if (getCommand("balance") != null) {
-            getCommand("balance").setTabCompleter((sender, cmd, alias, args) -> {
-                if (args.length == 1 && sender.hasPermission("oreo.balance.others")) {
-                    String partial = args[0].toLowerCase(java.util.Locale.ROOT);
-                    return org.bukkit.Bukkit.getOnlinePlayers().stream()
-                            .map(org.bukkit.entity.Player::getName)
-                            .filter(n -> n.toLowerCase(java.util.Locale.ROOT).startsWith(partial))
-                            .sorted(String.CASE_INSENSITIVE_ORDER).toList();
-                }
-                return java.util.List.of();
-            });
-        }
+        // Commands that have no OreoCommand registration — use registerLegacy.
+        var otherHomesCmd = new OtherHomesListCommand(this, homeService);
+        commands.registerLegacy("otherhomes", otherHomesCmd, otherHomesCmd);
 
-        if (getCommand("otherhomes") != null) {
-            var c = new OtherHomesListCommand(this, homeService);
-            getCommand("otherhomes").setExecutor(c);
-            getCommand("otherhomes").setTabCompleter(c);
-        }
-        if (getCommand("otherhome") != null) {
-            var otherHome = new OtherHomeCommand(this, homeService);
-            this.commands.register(otherHome);
-            getCommand("otherhome").setTabCompleter(otherHome);
-        }
+        // otherhome is an OreoCommand; register() already wires its tab completer.
+        this.commands.register(new OtherHomeCommand(this, homeService));
 
-        if (getCommand("aliaseditor") != null) {
-            var aliasCmd = new fr.elias.oreoEssentials.modules.aliases.AliasEditorCommand(aliasService, invManager);
-            getCommand("aliaseditor").setExecutor(aliasCmd);
-            getCommand("aliaseditor").setTabCompleter(aliasCmd);
-        }
+        var aliasCmd = new fr.elias.oreoEssentials.modules.aliases.AliasEditorCommand(aliasService, invManager);
+        commands.registerLegacy("aliaseditor", aliasCmd, aliasCmd);
 
-        if (getCommand("commandtoggle") != null && commandToggleConfig != null && commandToggleService != null) {
+        if (commandToggleConfig != null && commandToggleService != null) {
             var cmdToggleCmd = new CommandToggleCommand(this, commandToggleConfig, commandToggleService);
-            getCommand("commandtoggle").setExecutor(cmdToggleCmd);
-            getCommand("commandtoggle").setTabCompleter(cmdToggleCmd);
+            commands.registerLegacy("commandtoggle", cmdToggleCmd, cmdToggleCmd);
             getLogger().info("[CommandToggle] /commandtoggle command registered");
         }
 
-        if (getCommand("skin")       != null) getCommand("skin").setTabCompleter(new SkinCommand());
-        if (getCommand("clone")      != null) getCommand("clone").setTabCompleter(new CloneCommand());
-        if (getCommand("head")       != null) getCommand("head").setTabCompleter(new HeadCommand());
-        if (getCommand("home")       != null) getCommand("home").setTabCompleter(new HomeTabCompleter(homeService));
-        if (getCommand("warp")       != null) getCommand("warp").setTabCompleter(new WarpTabCompleter(warpService));
-        if (getCommand("enchant")    != null) getCommand("enchant").setTabCompleter(new fr.elias.oreoEssentials.commands.completion.EnchantTabCompleter());
-        if (getCommand("disenchant") != null) getCommand("disenchant").setTabCompleter(new fr.elias.oreoEssentials.commands.completion.EnchantTabCompleter());
-        if (getCommand("pw") != null && this.playerWarpService != null) getCommand("pw").setTabCompleter(new PlayerWarpTabCompleter(this.playerWarpService));
-        if (getCommand("mute")   != null) getCommand("mute").setTabCompleter(muteCmd);
-        if (getCommand("unmute") != null) getCommand("unmute").setTabCompleter(unmuteCmd);
-        if (getCommand("unban")  != null) getCommand("unban").setTabCompleter(new UnbanCommand());
-        if (getCommand("nick")   != null) getCommand("nick").setTabCompleter(nickCmd);
-        if (getCommand("invsee") != null) getCommand("invsee").setTabCompleter(new InvseeCommand());
-        if (getCommand("ecsee")  != null) getCommand("ecsee").setTabCompleter(new EcSeeCommand());
+        // Tab-completer overrides for remaining OreoCommands.
+        commands.rewireTab("skin",       new SkinCommand());
+        commands.rewireTab("clone",      new CloneCommand());
+        commands.rewireTab("head",       new HeadCommand());
+        commands.rewireTab("home",       new HomeTabCompleter(homeService));
+        commands.rewireTab("warp",       new WarpTabCompleter(warpService));
+        commands.rewireTab("enchant",    new fr.elias.oreoEssentials.commands.completion.EnchantTabCompleter());
+        commands.rewireTab("disenchant", new fr.elias.oreoEssentials.commands.completion.EnchantTabCompleter());
+        if (this.playerWarpService != null) commands.rewireTab("pw", new PlayerWarpTabCompleter(this.playerWarpService));
+        commands.rewireTab("mute",   muteCmd);
+        commands.rewireTab("unmute", unmuteCmd);
+        commands.rewireTab("unban",  new UnbanCommand());
+        commands.rewireTab("nick",   nickCmd);
+        commands.rewireTab("invsee", new InvseeCommand());
+        commands.rewireTab("ecsee",  new EcSeeCommand());
     }
 
     private void initJails() {
@@ -2087,18 +2069,9 @@ public final class OreoEssentials extends JavaPlugin {
             getLogger().info("[RTP] Enabled.");
         }
 
-        if (packetManager != null && packetManager.isInitialized() && this.rtpConfig != null && this.rtpConfig.isCrossServerEnabled()) {
-            try {
-                this.rtpBridge = new fr.elias.oreoEssentials.modules.rtp.RtpCrossServerBridge(this, this.packetManager, this.configService.serverName());
-                getLogger().info("[RTP] Cross-server RTP bridge ready.");
-            } catch (Throwable t) {
-                this.rtpBridge = null;
-                getLogger().warning("[RTP] Failed to init cross-server RTP bridge: " + t.getMessage());
-            }
-        } else {
-            this.rtpBridge = null;
-            getLogger().info("[RTP] Cross-server RTP bridge disabled.");
-        }
+        // Bridge requires packetManager which is created async in initRabbitMQ().
+        // It is initialized in initBrokers() once the connection is established.
+        this.rtpBridge = null;
     }
 
     private void initBossBar() {
