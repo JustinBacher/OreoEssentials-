@@ -633,8 +633,8 @@ public final class OreoEssentials extends JavaPlugin {
             this.tempFlyService = new fr.elias.oreoEssentials.modules.tempfly.TempFlyService(this, tempFlyConfig);
             var tempFlyCmd = new TempFlyCommand(tempFlyService);
             this.commands.register(tempFlyCmd);
-            if (getCommand("tempfly") != null) getCommand("tempfly").setTabCompleter(tempFlyCmd);
-            if (getCommand("tfly")    != null) getCommand("tfly").setTabCompleter(tempFlyCmd);
+            commands.rewireTab("tempfly", tempFlyCmd);
+            commands.rewireTab("tfly",    tempFlyCmd);
             getLogger().info("[TempFly] Enabled.");
         } else {
             unregisterCommandHard("tempfly");
@@ -744,9 +744,9 @@ public final class OreoEssentials extends JavaPlugin {
             var payCmd    = new PayCommand();
             var chequeCmd = new ChequeCommand(this);
             this.commands.register(moneyCmd).register(payCmd).register(chequeCmd);
-            if (getCommand("money")  != null) getCommand("money").setTabCompleter(new MoneyTabCompleter(this));
-            if (getCommand("pay")    != null) getCommand("pay").setTabCompleter(new PayTabCompleter(this));
-            if (getCommand("cheque") != null) getCommand("cheque").setTabCompleter(new ChequeTabCompleter());
+            commands.rewireTab("money",  new MoneyTabCompleter(this));
+            commands.rewireTab("pay",    new PayTabCompleter(this));
+            commands.rewireTab("cheque", new ChequeTabCompleter());
         } else if (economyEnabled) {
             getLogger().warning("[ECON] Enabled but no database selected/connected; economy commands unavailable.");
         } else {
@@ -866,12 +866,7 @@ public final class OreoEssentials extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new fr.elias.oreoEssentials.modules.maintenance.MaintenanceModuleListener(this, maintenanceService), this);
 
             var maintenanceCmd = new fr.elias.oreoEssentials.modules.maintenance.MaintenanceCommand(this, maintenanceService);
-            if (getCommand("maintenance") != null) {
-                getCommand("maintenance").setExecutor(maintenanceCmd);
-                getCommand("maintenance").setTabCompleter(maintenanceCmd);
-            } else {
-                getLogger().warning("[Maintenance] Command 'maintenance' not found in plugin.yml");
-            }
+            commands.registerLegacy("maintenance", maintenanceCmd, maintenanceCmd);
 
             if (maintenanceConfig.isTimerExpired() && maintenanceConfig.isEnabled()) {
                 maintenanceService.disable();
@@ -982,13 +977,12 @@ public final class OreoEssentials extends JavaPlugin {
 
         this.auctionHouse = new AuctionHouseModule(this);
         if (auctionHouse.enabled()) {
-            if (getCommand("ah")        != null) getCommand("ah").setExecutor(new AuctionHouseCommand(auctionHouse));
-
-            if (getCommand("ahs")       != null) getCommand("ahs").setExecutor(new SellCommand(auctionHouse));
-            if (getCommand("ahsearch")  != null) getCommand("ahsearch").setExecutor(new SearchCommand(auctionHouse));
-            if (getCommand("ahexpired") != null) getCommand("ahexpired").setExecutor(new ExpiredCommand(auctionHouse));
-            if (getCommand("ahsold")    != null) getCommand("ahsold").setExecutor(new SoldCommand(auctionHouse));
-            if (getCommand("ahadmin")   != null) getCommand("ahadmin").setExecutor(new AdminCommand(auctionHouse));
+            commands.registerLegacy("ah",        new AuctionHouseCommand(auctionHouse));
+            commands.registerLegacy("ahs",       new SellCommand(auctionHouse));
+            commands.registerLegacy("ahsearch",  new SearchCommand(auctionHouse));
+            commands.registerLegacy("ahexpired", new ExpiredCommand(auctionHouse));
+            commands.registerLegacy("ahsold",    new SoldCommand(auctionHouse));
+            commands.registerLegacy("ahadmin",   new AdminCommand(auctionHouse));
             if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) new AuctionPlaceholders(auctionHouse).register();
         }
 
@@ -1039,12 +1033,8 @@ public final class OreoEssentials extends JavaPlugin {
 
         if (this.tradeConfig.enabled && settingsConfig.tradeEnabled()) {
             this.tradeService = new TradeService(this, this.tradeConfig);
-            if (getCommand("trade") != null) {
-                getCommand("trade").setExecutor(new TradeCommand(this, this.tradeService));
-                getLogger().info("[Trade] Enabled.");
-            } else {
-                getLogger().warning("[Trade] Command 'trade' not found in plugin.yml; skipping.");
-            }
+            commands.registerLegacy("trade", new TradeCommand(this, this.tradeService));
+            getLogger().info("[Trade] Enabled.");
             org.bukkit.Bukkit.getPluginManager().registerEvents(new fr.elias.oreoEssentials.modules.trade.ui.TradeGuiGuardListener(this), this);
             getServer().getPluginManager().registerEvents(new fr.elias.oreoEssentials.modules.trade.ui.TradeInventoryCloseListener(this), this);
         } else {
@@ -1061,11 +1051,7 @@ public final class OreoEssentials extends JavaPlugin {
         getServer().getPluginManager().registerEvents(
                 new fr.elias.oreoEssentials.modules.customcraft.CustomCraftingListener(this.customCraftingService, this.craftActionsConfig), this);
 
-        if (getCommand("oecraft") != null) {
-            getCommand("oecraft").setExecutor(new OeCraftCommand(this, invManager, customCraftingService));
-        } else {
-            getLogger().warning("[CustomCraft] Command 'oecraft' not found in plugin.yml.");
-        }
+        commands.registerLegacy("oecraft", new OeCraftCommand(this, invManager, customCraftingService));
     }
 
     private void initFreeze() {
@@ -1080,7 +1066,7 @@ public final class OreoEssentials extends JavaPlugin {
         this.dailyRewardsConfig.load();
         this.dailyService = new fr.elias.oreoEssentials.modules.daily.DailyService(this, dailyConfig, dailyStorage, dailyRewardsConfig);
         var dailyCmd = new fr.elias.oreoEssentials.modules.daily.DailyCommand(this, dailyConfig, dailyService, dailyRewardsConfig);
-        if (getCommand("daily") != null) { getCommand("daily").setExecutor(dailyCmd); getCommand("daily").setTabCompleter(dailyCmd); }
+        commands.registerLegacy("daily", dailyCmd, dailyCmd);
         getLogger().info("[Daily] Rewards system initialized with " + (dailyConfig.mongo.enabled ? "MongoDB" : "file-based") + " storage.");
     }
 
@@ -1114,19 +1100,10 @@ public final class OreoEssentials extends JavaPlugin {
             }
         }
 
-        if (getCommand("discord") != null) {
-            var linkCmd = new fr.elias.oreoEssentials.modules.discordbot.DiscordLinkCommand(discordLinkManager);
-            getCommand("discord").setExecutor(linkCmd);
-            getCommand("discord").setTabCompleter(linkCmd);
-        }
-        if (getCommand("oe-discord") != null) {
-            getCommand("oe-discord").setExecutor(
-                    new fr.elias.oreoEssentials.modules.discordbot.DiscordRconExtension(
-                            homeService,
-                            database
-                    )
-            );
-        }
+        var linkCmd = new fr.elias.oreoEssentials.modules.discordbot.DiscordLinkCommand(discordLinkManager);
+        commands.registerLegacy("discord", linkCmd, linkCmd);
+        commands.registerLegacy("oe-discord",
+                new fr.elias.oreoEssentials.modules.discordbot.DiscordRconExtension(homeService, database));
     }
 
     private void initMobs() {
@@ -1230,15 +1207,12 @@ public final class OreoEssentials extends JavaPlugin {
             var channelCmd   = new fr.elias.oreoEssentials.modules.chat.channels.commands.OeChannelCommand(this, channelManager);
             this.commands.register(channelsCmd);
             this.commands.register(channelCmd);
-            if (getCommand("oechannel") != null) getCommand("oechannel").setTabCompleter(channelCmd);
-            if (getCommand("channel")   != null) getCommand("channel").setTabCompleter(channelCmd);
+            commands.rewireTab("oechannel", channelCmd);
+            commands.rewireTab("channel",   channelCmd);
             getLogger().info("[Channels] Enabled with " + channelManager.getAllChannels().size() + " channels");
 
             var announceCmd = new fr.elias.oreoEssentials.modules.chat.channels.commands.ChannelAnnounceCommand(this, channelManager, chatSyncManager);
-            if (getCommand("channelannounce") != null) {
-                getCommand("channelannounce").setExecutor(announceCmd);
-                getCommand("channelannounce").setTabCompleter(announceCmd);
-            }
+            commands.registerLegacy("channelannounce", announceCmd, announceCmd);
             getLogger().info("[Channels] Announcement command registered.");
         } else {
             getLogger().info("[Channels] Disabled by config.");
@@ -1708,7 +1682,7 @@ public final class OreoEssentials extends JavaPlugin {
 
         var tphere = new TphereCommand(this);
         this.commands.register(tphere);
-        if (getCommand("tphere") != null) getCommand("tphere").setTabCompleter(tphere);
+        commands.rewireTab("tphere", tphere);
         this.commands.register(nickCmd);
 
         this.commands
@@ -1813,7 +1787,7 @@ public final class OreoEssentials extends JavaPlugin {
 
         var gmCmd = new fr.elias.oreoEssentials.commands.core.admins.GamemodeCommand(visitorService);
         this.getCommands().register(gmCmd);
-        if (getCommand("gamemode") != null) getCommand("gamemode").setTabCompleter(gmCmd);
+        commands.rewireTab("gamemode", gmCmd);
 
         this.commands.register(new fr.elias.oreoEssentials.commands.core.admins.OeWorldCommand(this));
 
@@ -1827,24 +1801,15 @@ public final class OreoEssentials extends JavaPlugin {
         fr.elias.oreoEssentials.modules.webpanel.WebPanelClient client =
                 new fr.elias.oreoEssentials.modules.webpanel.WebPanelClient(wpConfig, getLogger());
 
-        if (getCommand("weblink") != null) {
-            getCommand("weblink").setExecutor(
-                    new fr.elias.oreoEssentials.modules.webpanel.WebLinkCommand(wpConfig, client));
-        }
+        commands.registerLegacy("weblink",
+                new fr.elias.oreoEssentials.modules.webpanel.WebLinkCommand(wpConfig, client));
 
         if (!wpConfig.isEnabled()) {
             getLogger().info("[WebPanel] Disabled (set web-panel.enabled=true and api-key in config.yml to enable).");
             return;
         }
 
-        // Register /weblink command
-        if (getCommand("weblink") != null) {
-            getCommand("weblink").setExecutor(
-                    new fr.elias.oreoEssentials.modules.webpanel.WebLinkCommand(wpConfig, client));
-        } else {
-            getLogger().warning("[WebPanel] 'weblink' command not found in plugin.yml Ã¢â‚¬â€ skipping registration.");
-        }
-
+        // Start event
         // Start event-driven player sync (join/quit/block events + periodic)
         this.webPanelSyncService = new fr.elias.oreoEssentials.modules.webpanel.WebPanelSyncService(this, client);
         this.webPanelSyncService.start();
@@ -1861,13 +1826,9 @@ public final class OreoEssentials extends JavaPlugin {
                 new fr.elias.oreoEssentials.modules.webpanel.RegisterRewardService(
                         this, rrConfig, client, rrIaHook, rrNexoHook);
         getServer().getPluginManager().registerEvents(rrService, this);
-        if (getCommand("registerreward") != null) {
-            getCommand("registerreward").setExecutor(
-                    new fr.elias.oreoEssentials.modules.webpanel.RegisterRewardCommand(
-                            this, rrConfig, rrService, rrIaHook, rrNexoHook));
-        } else {
-            getLogger().warning("[WebPanel] 'registerreward' command not found in plugin.yml Ã¢â‚¬â€ skipping registration.");
-        }
+        commands.registerLegacy("registerreward",
+                new fr.elias.oreoEssentials.modules.webpanel.RegisterRewardCommand(
+                        this, rrConfig, rrService, rrIaHook, rrNexoHook));
 
         getLogger().info("[WebPanel] Enabled Ã¢â‚¬â€ syncing to " + wpConfig.getUrl());
     }
@@ -1970,30 +1931,20 @@ public final class OreoEssentials extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new fr.elias.oreoEssentials.modules.jail.JailGuardListener(jailService), this);
         getServer().getPluginManager().registerEvents(new fr.elias.oreoEssentials.modules.jail.JailJoinListener(jailService), this);
 
-        if (getCommand("jail") != null) {
-            var jailCmd = new fr.elias.oreoEssentials.modules.jail.commands.JailCommand(jailService);
-            getCommand("jail").setExecutor(jailCmd);
-            getCommand("jail").setTabCompleter(new fr.elias.oreoEssentials.modules.jail.commands.JailCommandTabCompleter(jailService));
-        }
-        if (getCommand("jailedit") != null) {
-            var jailEditCmd = new fr.elias.oreoEssentials.modules.jail.commands.JailEditCommand(jailService);
-            getCommand("jailedit").setExecutor(jailEditCmd);
-            getCommand("jailedit").setTabCompleter(new fr.elias.oreoEssentials.modules.jail.commands.JailEditCommandTabCompleter(jailService));
-        }
-        if (getCommand("jaillist") != null) {
-            var jailListCmd = new fr.elias.oreoEssentials.modules.jail.commands.JailListCommand(jailService);
-            getCommand("jaillist").setExecutor(jailListCmd);
-            getCommand("jaillist").setTabCompleter(new fr.elias.oreoEssentials.modules.jail.commands.JailListCommandTabCompleter(jailService));
-        }
+        commands.registerLegacy("jail",
+                new fr.elias.oreoEssentials.modules.jail.commands.JailCommand(jailService),
+                new fr.elias.oreoEssentials.modules.jail.commands.JailCommandTabCompleter(jailService));
+        commands.registerLegacy("jailedit",
+                new fr.elias.oreoEssentials.modules.jail.commands.JailEditCommand(jailService),
+                new fr.elias.oreoEssentials.modules.jail.commands.JailEditCommandTabCompleter(jailService));
+        commands.registerLegacy("jaillist",
+                new fr.elias.oreoEssentials.modules.jail.commands.JailListCommand(jailService),
+                new fr.elias.oreoEssentials.modules.jail.commands.JailListCommandTabCompleter(jailService));
 
         if (this.playerWarpService != null) {
-            var pwCmd = new PlayerWarpCommand(this.playerWarpService);
-            this.commands.register(pwCmd);
-        }
-        if (getCommand("pwwhitelist") != null && this.playerWarpService != null) {
+            this.commands.register(new PlayerWarpCommand(this.playerWarpService));
             PlayerWarpWhitelistCommand pwwCmd = new PlayerWarpWhitelistCommand(this.playerWarpService);
-            getCommand("pwwhitelist").setExecutor(pwwCmd);
-            getCommand("pwwhitelist").setTabCompleter(pwwCmd);
+            commands.registerLegacy("pwwhitelist", pwwCmd, pwwCmd);
             getLogger().info("[PlayerWarps] /pwwhitelist registered.");
         }
 
@@ -2020,11 +1971,8 @@ public final class OreoEssentials extends JavaPlugin {
             getLogger().info("[Portals] RabbitMQ unavailable — cross-server portals disabled.");
         }
 
-        if (getCommand("portal") != null) {
-            var portalCmd = new fr.elias.oreoEssentials.modules.portals.PortalsCommand(this.portals, wandListener);
-            getCommand("portal").setExecutor(portalCmd);
-            getCommand("portal").setTabCompleter(portalCmd);
-        }
+        var portalCmd = new fr.elias.oreoEssentials.modules.portals.PortalsCommand(this.portals, wandListener);
+        commands.registerLegacy("portal", portalCmd, portalCmd);
     }
 
     private void initGroupRtp() {
@@ -2039,11 +1987,8 @@ public final class OreoEssentials extends JavaPlugin {
     private void initJumpPads() {
         this.jumpPads = new fr.elias.oreoEssentials.modules.jumpads.JumpPadsManager(this);
         getServer().getPluginManager().registerEvents(new fr.elias.oreoEssentials.modules.jumpads.JumpPadsListener(this.jumpPads), this);
-        if (getCommand("jumpad") != null) {
-            var jumpCmd = new fr.elias.oreoEssentials.modules.jumpads.JumpPadsCommand(this.jumpPads);
-            getCommand("jumpad").setExecutor(jumpCmd);
-            getCommand("jumpad").setTabCompleter(jumpCmd);
-        }
+        var jumpCmd = new fr.elias.oreoEssentials.modules.jumpads.JumpPadsCommand(this.jumpPads);
+        commands.registerLegacy("jumpad", jumpCmd, jumpCmd);
     }
 
     private void initPlayerVaults() {
@@ -2184,12 +2129,10 @@ public final class OreoEssentials extends JavaPlugin {
         }
 
         var prewardsCmd = new fr.elias.oreoEssentials.modules.playtime.PrewardsCommand(this, this.playtimeRewards);
-        if (getCommand("prewards") != null) { getCommand("prewards").setExecutor(prewardsCmd); getCommand("prewards").setTabCompleter(prewardsCmd); }
-        else { getLogger().warning("[Prewards] Command 'prewards' not found in plugin.yml."); }
+        commands.registerLegacy("prewards", prewardsCmd, prewardsCmd);
 
         var playtimeCmd = new fr.elias.oreoEssentials.commands.core.playercommands.PlaytimeCommand();
-        if (getCommand("playtime") != null) { getCommand("playtime").setExecutor(playtimeCmd); getCommand("playtime").setTabCompleter(playtimeCmd); }
-        else { getLogger().warning("[Playtime] Command 'playtime' not found in plugin.yml."); }
+        commands.registerLegacy("playtime", playtimeCmd, playtimeCmd);
     }
 
     private void initEvents() {
@@ -2200,7 +2143,7 @@ public final class OreoEssentials extends JavaPlugin {
         getServer().getPluginManager().registerEvents(eventEngine, this);
 
         var eventCmd = new fr.elias.oreoEssentials.modules.events.EventCommands(eventConfig, deathMessages);
-        if (getCommand("oevents") != null) { getCommand("oevents").setExecutor(eventCmd); getCommand("oevents").setTabCompleter(eventCmd); }
+        commands.registerLegacy("oevents", eventCmd);
     }
 
     private void initNametag() {
@@ -2414,10 +2357,10 @@ public final class OreoEssentials extends JavaPlugin {
                     org.bukkit.plugin.ServicePriority.Normal);
             getLogger().info("[Currency] Registered OreoEssentialsAPI via ServicesManager");
             this.commands.register(new CurrencyCommand(this)).register(new CurrencyBalanceCommand(this)).register(new CurrencySendCommand(this)).register(new CurrencyTopCommand(this));
-            if (getCommand("currency")        != null) getCommand("currency").setTabCompleter(new CurrencyCommandTabCompleter(this));
-            if (getCommand("currencybalance") != null) getCommand("currencybalance").setTabCompleter(new CurrencyBalanceTabCompleter(this));
-            if (getCommand("currencysend")    != null) getCommand("currencysend").setTabCompleter(new CurrencySendTabCompleter(this));
-            if (getCommand("currencytop")     != null) getCommand("currencytop").setTabCompleter(new CurrencyTopTabCompleter(this));
+            commands.rewireTab("currency",        new CurrencyCommandTabCompleter(this));
+            commands.rewireTab("currencybalance", new CurrencyBalanceTabCompleter(this));
+            commands.rewireTab("currencysend",    new CurrencySendTabCompleter(this));
+            commands.rewireTab("currencytop",     new CurrencyTopTabCompleter(this));
             if (currencyConfig.isCrossServerEnabled() && packetManager != null && packetManager.isInitialized()) {
                 packetManager.subscribe(fr.elias.oreoEssentials.modules.currency.rabbitmq.CurrencySyncPacket.class, (channel, pkt) -> {
                     try { currencyService.handleCurrencySync(pkt); }
