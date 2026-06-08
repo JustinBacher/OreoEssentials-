@@ -38,9 +38,6 @@ public class CommandManager {
     public CommandManager register(OreoCommand cmd) {
         api.registerCommand(new OreoCommandAdapter(plugin, cmd));
 
-        // Re-wire tab completer after CommandsAPI has injected the PluginCommand.
-        // This preserves full args[] context that CommandsAPI's per-argument
-        // TabCompleter<S>(sender, currentToken) would otherwise lose.
         rewireTabCompleter(cmd.name(), cmd);
         for (String alias : cmd.aliases()) {
             rewireTabCompleter(alias, cmd);

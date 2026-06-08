@@ -7,13 +7,6 @@ import org.bukkit.command.CommandSender;
 
 /**
  * Bridges the existing {@link OreoCommand} interface with the CommandsAPI framework.
- *
- * All existing OreoCommand implementations stay unchanged. This adapter wraps one
- * and registers it via CommandsAPI's command injection pipeline (no plugin.yml
- * commands block required).
- *
- * Arguments are captured as a single optional Infinite String so that CommandsAPI
- * accepts any number of tokens, then reconstructed into String[] for OreoCommand.
  */
 public final class OreoCommandAdapter extends fr.traqueur.commands.spigot.Command<OreoEssentials> {
 
@@ -41,8 +34,6 @@ public final class OreoCommandAdapter extends fr.traqueur.commands.spigot.Comman
             this.setGameOnly(true);
         }
 
-        // Declare optional Infinite arg so CommandsAPI accepts 0..∞ raw tokens.
-        // DefaultArgumentParser joins them with spaces; we split them back in execute().
         this.addOptionalArg("_args", Infinite.class);
     }
 

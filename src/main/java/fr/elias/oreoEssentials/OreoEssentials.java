@@ -740,6 +740,10 @@ public final class OreoEssentials extends JavaPlugin {
             this.database.populateCache(offlinePlayerCache);
             OreScheduler.runAsyncTimer(this, () -> this.database.populateCache(offlinePlayerCache), 20L * 60, 20L * 300);
 
+            unregisterCommandHard("money");
+            unregisterCommandHard("balance");
+            unregisterCommandHard("bal");
+
             var moneyCmd  = new MoneyCommand(this);
             var payCmd    = new PayCommand();
             var chequeCmd = new ChequeCommand(this);
