@@ -99,7 +99,13 @@ public final class GroupRtpPortalDef {
     public boolean contains(org.bukkit.Location loc) {
         if (loc.getWorld() == null) return false;
         if (!loc.getWorld().getName().equals(worldName)) return false;
-        return box.contains(loc.toVector());
+        // BoundingBox.contains(Vector) is exclusive on the max boundary, so a player
+        // standing exactly on the top face (e.g. Y == maxY) would never be detected.
+        // Use explicit inclusive comparisons instead.
+        double x = loc.getX(), y = loc.getY(), z = loc.getZ();
+        return x >= box.getMinX() && x <= box.getMaxX()
+            && y >= box.getMinY() && y <= box.getMaxY()
+            && z >= box.getMinZ() && z <= box.getMaxZ();
     }
 
     public boolean hasPermission(org.bukkit.entity.Player p) {

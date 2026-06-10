@@ -273,6 +273,7 @@ public final class OreoEssentials extends JavaPlugin {
     public AutoRebootService getAutoRebootService() { return autoRebootService; }
 
     private CraftActionsConfig craftActionsConfig;
+    public CraftActionsConfig getCraftActionsConfig() { return craftActionsConfig; }
     private SellGuiManager sellGuiManager;
     public SellGuiManager getSellGuiManager() { return sellGuiManager; }
 
@@ -2623,6 +2624,10 @@ public final class OreoEssentials extends JavaPlugin {
     public FreezeService getFreezeService() { return freezeService; }
     public fr.elias.oreoEssentials.modules.chat.CustomConfig getChatConfig() { return chatConfig; }
     public org.bukkit.configuration.file.FileConfiguration getPlayerWarpsConfig() { return playerWarpsConfig; }
+    public void reloadPlayerWarpsConfig() {
+        java.io.File pwCfgFile = new java.io.File(getDataFolder(), "playerwarps/config.yml");
+        this.playerWarpsConfig = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(pwCfgFile);
+    }
     public void reloadPlayerWarpsConfig() {
         java.io.File f = new java.io.File(getDataFolder(), "playerwarps/config.yml");
         if (!f.exists()) saveResource("playerwarps/config.yml", false);
