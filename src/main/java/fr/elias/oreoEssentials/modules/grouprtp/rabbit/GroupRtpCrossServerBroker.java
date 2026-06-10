@@ -34,6 +34,8 @@ public final class GroupRtpCrossServerBroker implements Listener {
 
     /** playerId → pre-computed scatter destination waiting for the player to join */
     private final ConcurrentHashMap<UUID, Location> pending = new ConcurrentHashMap<>();
+    /** playerId → error message to deliver once the player joins (when location search failed) */
+    private final ConcurrentHashMap<UUID, String> pendingFailed = new ConcurrentHashMap<>();
     /** requestId dedup — prevents double-processing on RabbitMQ redelivery */
     private final ConcurrentHashMap<String, Boolean> seenRequests = new ConcurrentHashMap<>();
 
@@ -60,6 +62,8 @@ public final class GroupRtpCrossServerBroker implements Listener {
                     plugin.getLogger().warning("[GroupRTP] Cross-server broker: world '"
                             + pkt.getWorldName() + "' not found on this server (portal: "
                             + pkt.getPortalId() + ").");
+                    for (UUID uuid : players) pendingFailed.put(uuid,
+                            ChatColor.RED + "Could not find a safe location. Please try again later.");
                     return;
                 }
 
@@ -72,6 +76,8 @@ public final class GroupRtpCrossServerBroker implements Listener {
                 if (base == null) {
                     plugin.getLogger().warning("[GroupRTP] Cross-server broker: could not find safe"
                             + " location for portal " + pkt.getPortalId());
+                    for (UUID uuid : players) pendingFailed.put(uuid,
+                            ChatColor.RED + "Could not find a safe location. Please try again later.");
                     return;
                 }
 
@@ -93,6 +99,16 @@ public final class GroupRtpCrossServerBroker implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player p = event.getPlayer();
+
+        // Handle failed location search — notify player after a short settle delay
+        String failMsg = pendingFailed.remove(p.getUniqueId());
+        if (failMsg != null) {
+            OreScheduler.runLater(plugin, () -> {
+                if (p.isOnline()) p.sendMessage(failMsg);
+            }, 20L);
+            return;
+        }
+
         Location dest = pending.remove(p.getUniqueId());
         if (dest == null) return;
 

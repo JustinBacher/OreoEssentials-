@@ -21,6 +21,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
@@ -489,7 +490,7 @@ public class PlayerNametagManager implements Listener {
         }
     }
 
-    private void markOwnerDirty(UUID ownerId) {
+    public void markOwnerDirty(UUID ownerId) {
         if (ownerId != null) dirtyOwners.add(ownerId);
     }
 
@@ -510,6 +511,11 @@ public class PlayerNametagManager implements Listener {
         if (!showToSelf && viewer.getUniqueId().equals(owner.getUniqueId())) return false;
         // Respect the owner's own toggle
         if (toggleStore != null && toggleStore.isToggledOff(owner.getUniqueId())) return false;
+        // Hide nametag for vanished players
+        fr.elias.oreoEssentials.services.VanishService vanishSvc = plugin.getVanishService();
+        if (vanishSvc != null && vanishSvc.isVanished(owner)) return false;
+        // Hide nametag when the owner is sneaking
+        if (owner.isSneaking()) return false;
 
         // Must be in the same world
         if (!owner.getWorld().equals(viewer.getWorld())) return false;
@@ -779,6 +785,12 @@ public class PlayerNametagManager implements Listener {
         nextViewerRefreshAtMs.put(player.getUniqueId(), now + (moveVisibilityCooldownTicks * 50L));
         updateVisibilityForViewer(player);
         markOwnerDirty(player.getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSneak(PlayerToggleSneakEvent event) {
+        if (!enabled) return;
+        markOwnerDirty(event.getPlayer().getUniqueId());
     }
 
     // ── Public API ────────────────────────────────────────────────────────────

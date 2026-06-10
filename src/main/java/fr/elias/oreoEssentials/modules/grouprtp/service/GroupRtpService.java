@@ -295,7 +295,8 @@ public final class GroupRtpService {
             for (UUID uid : group) {
                 Player p = Bukkit.getPlayer(uid);
                 if (p != null) OreScheduler.runForEntity(plugin, p, () -> {
-                    if (p.isOnline()) p.sendMessage(def.msg("no-location", "&cCould not find a safe location."));
+                    if (p.isOnline()) p.sendMessage(def.msg("no-location",
+                            "&cCross-server RTP is unavailable. Please try again later."));
                 });
             }
             return;
@@ -313,9 +314,25 @@ public final class GroupRtpService {
                 new ArrayList<>(def.getBlacklistedBiomes())
         );
 
-        pm.sendPacket(PacketChannels.individual(def.getRtpServer()), pkt);
+        try {
+            pm.sendPacket(PacketChannels.individual(def.getRtpServer()), pkt);
+        } catch (Throwable t) {
+            log.warning("[GroupRTP] Failed to send cross-server packet for portal "
+                    + def.getId() + ": " + t.getMessage());
+            for (UUID uid : group) {
+                Player p = Bukkit.getPlayer(uid);
+                if (p != null) OreScheduler.runForEntity(plugin, p, () -> {
+                    if (p.isOnline()) p.sendMessage(def.msg("no-location",
+                            "&cCross-server RTP failed. Please try again later."));
+                });
+            }
+            return;
+        }
 
-        // Small delay to let RabbitMQ deliver the packet before players arrive
+        // Give RabbitMQ enough time to deliver the packet and the target server time to
+        // begin the async location search before players arrive.
+        // The broker handles late-arriving players via the pending map, so this delay is
+        // just a best-effort head-start, not a hard requirement.
         OreScheduler.runLater(plugin, () -> {
             for (UUID uid : group) {
                 Player p = Bukkit.getPlayer(uid);
@@ -323,7 +340,7 @@ public final class GroupRtpService {
                     plugin.getProxyMessenger().sendToServer(p, def.getRtpServer());
                 }
             }
-        }, 3L);
+        }, 20L); // 1 second
     }
 
     // ── Ambient particles (called from module tick) ───────────────────────────
