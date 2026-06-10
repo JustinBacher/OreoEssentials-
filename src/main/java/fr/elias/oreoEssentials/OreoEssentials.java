@@ -878,12 +878,12 @@ public final class OreoEssentials extends JavaPlugin {
             }
 
             if (maintenanceService.isEnabled()) {
-                getLogger().warning("Ã¢â€¢â€Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢â€”");
-                getLogger().warning("Ã¢â€¢â€˜                    Ã¢Å¡Â  MAINTENANCE ACTIVE Ã¢Å¡Â                   Ã¢â€¢â€˜");
+                getLogger().warning("+=============================================================+");
+                getLogger().warning("|                    !  MAINTENANCE ACTIVE  !                |");
                 if (maintenanceConfig.isUseTimer() && maintenanceConfig.getRemainingTime() > 0) {
-                    getLogger().warning(String.format("Ã¢â€¢â€˜  Time remaining: %-41s Ã¢â€¢â€˜", maintenanceService.getFormattedTimeRemaining()));
+                getLogger().warning(String.format("|  Time remaining: %-41s |", maintenanceService.getFormattedTimeRemaining()));
                 }
-                getLogger().warning("Ã¢â€¢Å¡Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â");
+                getLogger().warning("+=============================================================+");
             } else {
                 getLogger().info("[Maintenance] System initialized (currently disabled)");
             }
@@ -1668,15 +1668,15 @@ public final class OreoEssentials extends JavaPlugin {
             getLogger().info("[RTP] Cross-server RTP bridge disabled (packetManager or config not ready).");
         }
 
-        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI") && currencyService != null) {
-            OreScheduler.runLater(this, () -> {
-                try {
-                    this.currencyPlaceholders = new CurrencyPlaceholderExpansion(this);
-                    if (this.currencyPlaceholders.register()) { getLogger().info("Ã¢Å“â€œ PlaceholderAPI currency expansion registered!"); }
-                    else { getLogger().warning("Ã¢Å“â€” Failed to register PlaceholderAPI currency expansion!"); }
-                } catch (Throwable t) { getLogger().warning("[Currency] PlaceholderAPI expansion failed: " + t.getMessage()); }
-            }, 60L);
+        if (packetManager != null && packetManager.isInitialized() && this.groupRtpModule != null) {
+            try {
+                new fr.elias.oreoEssentials.modules.grouprtp.rabbit.GroupRtpCrossServerBroker(this, this.packetManager);
+                getLogger().info("[GroupRTP] Cross-server broker ready.");
+            } catch (Throwable t) {
+                getLogger().warning("[GroupRTP] Failed to init cross-server broker: " + t.getMessage());
+            }
         }
+
     }
 
     private void initCommands() {
@@ -2393,17 +2393,24 @@ public final class OreoEssentials extends JavaPlugin {
             OreScheduler.runLater(this, () -> {
                 try {
                     if (placeholderHook.register()) {
-                        getLogger().info("Ã¢Å“â€œ PlaceholderAPI expansion 'oreo' registered successfully!");
+                        getLogger().info("[OK] PlaceholderAPI expansion 'oreo' registered successfully!");
                         if (getConfig().getBoolean("placeholder-debug", false)) {
                             Player testPlayer = Bukkit.getOnlinePlayers().stream().findFirst().orElse(null);
                             if (testPlayer != null) getLogger().info("[PAPI TEST] %oreo_network_online% = " + placeholderHook.onRequest(testPlayer, "network_online"));
                         }
                     } else {
-                        getLogger().severe("Ã¢Å“â€” Failed to register PlaceholderAPI expansion!");
+                        getLogger().severe("[FAIL] Failed to register PlaceholderAPI expansion!");
                     }
                 } catch (Exception e) {
-                    getLogger().severe("Ã¢Å“â€” Error during PlaceholderAPI registration: " + e.getMessage());
+                    getLogger().severe("[FAIL] Error during PlaceholderAPI registration: " + e.getMessage());
                     e.printStackTrace();
+                }
+                if (currencyService != null) {
+                    try {
+                        this.currencyPlaceholders = new CurrencyPlaceholderExpansion(this);
+                        if (this.currencyPlaceholders.register()) { getLogger().info("[OK] PlaceholderAPI currency expansion registered!"); }
+                        else { getLogger().warning("[FAIL] Failed to register PlaceholderAPI currency expansion!"); }
+                    } catch (Throwable t) { getLogger().warning("[Currency] PlaceholderAPI expansion failed: " + t.getMessage()); }
                 }
             }, 60L);
         } catch (Throwable t) {
