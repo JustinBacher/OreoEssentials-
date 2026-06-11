@@ -2,7 +2,6 @@ package fr.elias.oreoEssentials.modules.mobs;
 
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import fr.elias.oreoEssentials.OreoEssentials;
-import fr.elias.ultimateChristmas.UltimateChristmas;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -42,7 +41,7 @@ public final class HealthBarListener implements Listener {
     private static final Pattern PAPI_TAG   = Pattern.compile("<papi:([^>]+)>");
 
     private final OreoEssentials plugin;
-    private final UltimateChristmas xmas;
+    private final Object xmas;
     private final boolean enabled;
 
     private final List<String> formatLines;
@@ -66,7 +65,7 @@ public final class HealthBarListener implements Listener {
     private OreTask sweeper;
     private int orphanCleanupCounter = 0;
 
-    public HealthBarListener(OreoEssentials plugin, UltimateChristmas xmasPlugin) {
+    public HealthBarListener(OreoEssentials plugin, Object xmasPlugin) {
         this.plugin = plugin;
         this.xmas   = xmasPlugin;
 
@@ -266,9 +265,7 @@ public final class HealthBarListener implements Listener {
             if (SantaHook.isSanta(le) || GrinchHook.isGrinch(le)) return false;
         } catch (Throwable ignored) {}
 
-        if (xmas != null) {
-            try { if (xmas.isSantaEntity(le)) return false; } catch (Throwable ignored) {}
-        }
+        if (xmas != null && safeIsSantaViaApi(le)) return false;
 
         if (le instanceof Player) return includePlayers;
         if (!includePassive && isPassive(le.getType())) return false;
@@ -617,7 +614,9 @@ public final class HealthBarListener implements Listener {
     }
 
     private boolean safeIsSantaViaApi(LivingEntity le) {
-        try { return xmas != null && xmas.isSantaEntity(le); }
-        catch (Throwable ignored) { return false; }
+        try {
+            Object result = xmas.getClass().getMethod("isSantaEntity", Entity.class).invoke(xmas, le);
+            return Boolean.TRUE.equals(result);
+        } catch (Throwable ignored) { return false; }
     }
 }

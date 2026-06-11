@@ -1113,11 +1113,11 @@ public final class OreoEssentials extends JavaPlugin {
 
     private void initMobs() {
         try {
-            fr.elias.ultimateChristmas.UltimateChristmas xmasHook = null;
+            Object xmasHook = null;
             try {
                 var maybe = getServer().getPluginManager().getPlugin("UltimateChristmas");
-                if (maybe instanceof fr.elias.ultimateChristmas.UltimateChristmas uc && maybe.isEnabled()) {
-                    xmasHook = uc;
+                if (maybe != null && maybe.isEnabled()) {
+                    xmasHook = maybe;
                     getLogger().info("[MOBS] UltimateChristmas hooked.");
                 }
             } catch (Throwable ignored) {}
@@ -2624,10 +2624,6 @@ public final class OreoEssentials extends JavaPlugin {
     public FreezeService getFreezeService() { return freezeService; }
     public fr.elias.oreoEssentials.modules.chat.CustomConfig getChatConfig() { return chatConfig; }
     public org.bukkit.configuration.file.FileConfiguration getPlayerWarpsConfig() { return playerWarpsConfig; }
-    public void reloadPlayerWarpsConfig() {
-        java.io.File pwCfgFile = new java.io.File(getDataFolder(), "playerwarps/config.yml");
-        this.playerWarpsConfig = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(pwCfgFile);
-    }
     public void reloadPlayerWarpsConfig() {
         java.io.File f = new java.io.File(getDataFolder(), "playerwarps/config.yml");
         if (!f.exists()) saveResource("playerwarps/config.yml", false);

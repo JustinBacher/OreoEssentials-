@@ -1,7 +1,5 @@
 package fr.elias.oreoEssentials.modules.mobs;
 
-import fr.elias.ultimateChristmas.UltimateChristmas;
-import fr.elias.ultimateChristmas.santa.SantaManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 
@@ -11,20 +9,20 @@ import org.bukkit.entity.Entity;
  */
 public final class SantaHook {
 
-    private static SantaManager cachedSantaManager = null;
+    private static Object cachedSantaManager = null;
     private static boolean lookedUp = false;
 
     private SantaHook() {}
 
-    private static SantaManager getSantaManager() {
+    private static Object getSantaManager() {
         // only try lookup once to avoid spam
         if (lookedUp) return cachedSantaManager;
         lookedUp = true;
 
         var plugin = Bukkit.getPluginManager().getPlugin("UltimateChristmas");
-        if (plugin instanceof UltimateChristmas uc) {
+        if (plugin != null && plugin.isEnabled()) {
             try {
-                cachedSantaManager = uc.getSantaManager();
+                cachedSantaManager = plugin.getClass().getMethod("getSantaManager").invoke(plugin);
             } catch (Throwable ignored) {
                 cachedSantaManager = null;
             }
@@ -33,10 +31,11 @@ public final class SantaHook {
     }
 
     public static boolean isSanta(Entity e) {
-        SantaManager sm = getSantaManager();
+        Object sm = getSantaManager();
         if (sm == null || e == null) return false;
         try {
-            return sm.isSanta(e);
+            Object result = sm.getClass().getMethod("isSanta", Entity.class).invoke(sm, e);
+            return Boolean.TRUE.equals(result);
         } catch (Throwable ignored) {
             return false;
         }

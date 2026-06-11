@@ -1,13 +1,12 @@
 package fr.elias.oreoEssentials.modules.mobs;
 
-import fr.elias.ultimateChristmas.UltimateChristmas;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 
 
 public final class GrinchHook {
     private static boolean lookedUp = false;
-    private static UltimateChristmas uc = null;
+    private static Object uc = null;
     private static Object grinchManager = null;
 
     private GrinchHook() {}
@@ -16,8 +15,8 @@ public final class GrinchHook {
         if (lookedUp) return;
         lookedUp = true;
         var p = Bukkit.getPluginManager().getPlugin("UltimateChristmas");
-        if (p instanceof UltimateChristmas u) {
-            uc = u;
+        if (p != null && p.isEnabled()) {
+            uc = p;
             try {
                 grinchManager = uc.getClass().getMethod("getGrinchManager").invoke(uc);
             } catch (Throwable ignored) {

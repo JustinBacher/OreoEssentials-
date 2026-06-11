@@ -342,14 +342,7 @@
             <version>5.4</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>fr.elias</groupId>
-            <artifactId>ultimateChristmas</artifactId>
-            <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/libs/UltimateChristmas-3.2-SNAPSHOT.jar</systemPath>
-        </dependency>
-        <dependency>
+<dependency>
             <groupId>com.github.MilkBowl</groupId>
             <artifactId>VaultAPI</artifactId>
             <version>1.7</version>

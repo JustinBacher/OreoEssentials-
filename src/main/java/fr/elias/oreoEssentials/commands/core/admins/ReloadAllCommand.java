@@ -241,11 +241,11 @@ public final class ReloadAllCommand implements OreoCommand {
         try {
             var core = OreoEssentials.get();
 
-            fr.elias.ultimateChristmas.UltimateChristmas xmasHook = null;
+            Object xmasHook = null;
             try {
                 org.bukkit.plugin.Plugin maybe = core.getServer().getPluginManager().getPlugin("UltimateChristmas");
-                if (maybe instanceof fr.elias.ultimateChristmas.UltimateChristmas uc && maybe.isEnabled()) {
-                    xmasHook = uc;
+                if (maybe != null && maybe.isEnabled()) {
+                    xmasHook = maybe;
                 }
             } catch (Throwable ignored) {}
 
