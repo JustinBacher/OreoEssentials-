@@ -20,6 +20,9 @@ public final class Shop {
 
     private boolean hideBackButton = false;
 
+    /** "inventory" (default) or "dialog". Set after construction by ShopManager. */
+    private String displayMode = "inventory";
+
     /** Per-shop GUI layout — set after construction by ShopManager. */
     private ShopGuiLayout guiLayout;
 
@@ -74,6 +77,8 @@ public final class Shop {
     public Collection<ShopItem> getAllItems()  { return items.values(); }
 
     public void setHideBackButton(boolean hideBackButton) { this.hideBackButton = hideBackButton; }
+    public void setDisplayMode(String displayMode)        { this.displayMode = displayMode; }
+    public String getDisplayMode()                        { return displayMode; }
     public void setGuiLayout(ShopGuiLayout guiLayout)    { this.guiLayout = guiLayout; }
     public ShopGuiLayout getGuiLayout()                  { return guiLayout; }
 

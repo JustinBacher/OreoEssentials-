@@ -3,6 +3,7 @@ package fr.elias.oreoEssentials.modules.shop;
 import fr.elias.oreoEssentials.OreoEssentials;
 import fr.elias.oreoEssentials.modules.shop.commands.SellCommand;
 import fr.elias.oreoEssentials.modules.shop.commands.ShopCommand;
+import fr.elias.oreoEssentials.modules.shop.dialog.ShopDialogManager;
 import fr.elias.oreoEssentials.modules.shop.gui.AmountSelectionGUI;
 import fr.elias.oreoEssentials.modules.shop.gui.MainMenuGUI;
 import fr.elias.oreoEssentials.modules.shop.gui.ShopGUI;
@@ -36,6 +37,7 @@ public final class ShopModule {
     private ShopGUI              shopGUI;
     private AmountSelectionGUI   amountSelectionGUI;
     private TransactionProcessor transactionProcessor;
+    private ShopDialogManager    shopDialogManager;
 
 
     private boolean enabled = false;
@@ -74,6 +76,7 @@ public final class ShopModule {
         this.shopGUI              = new ShopGUI(this);
         this.amountSelectionGUI   = new AmountSelectionGUI(this);
         this.transactionProcessor = new TransactionProcessor(this);
+        this.shopDialogManager    = new ShopDialogManager(this);
 
         plugin.getServer().getPluginManager()
                 .registerEvents(new AntiDupeListener(this), plugin);
@@ -126,6 +129,7 @@ public final class ShopModule {
     public ShopGUI getShopGUI()                             { return shopGUI; }
     public AmountSelectionGUI getAmountSelectionGUI()       { return amountSelectionGUI; }
     public TransactionProcessor getTransactionProcessor()   { return transactionProcessor; }
+    public ShopDialogManager getShopDialogManager()         { return shopDialogManager; }
 
 
 

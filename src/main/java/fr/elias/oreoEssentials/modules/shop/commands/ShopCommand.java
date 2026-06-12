@@ -169,7 +169,11 @@ public final class ShopCommand implements CommandExecutor, TabCompleter {
             }
             Shop shop = module.getShopManager().getShop(args[0]);
             if (shop != null) {
-                module.getShopGUI().open(player, shop, 1);
+                if ("dialog".equalsIgnoreCase(shop.getDisplayMode())) {
+                    module.getShopDialogManager().open(player, shop);
+                } else {
+                    module.getShopGUI().open(player, shop, 1);
+                }
             } else {
                 send(player, module.getShopConfig().getMessage("shop-not-found").replace("{shop}", args[0]));
             }
@@ -188,7 +192,11 @@ public final class ShopCommand implements CommandExecutor, TabCompleter {
                 send(sender, module.getShopConfig().getMessage("shop-not-found").replace("{shop}", args[1]));
                 return true;
             }
-            module.getShopGUI().open(target, shop, 1);
+            if ("dialog".equalsIgnoreCase(shop.getDisplayMode())) {
+                module.getShopDialogManager().open(target, shop);
+            } else {
+                module.getShopGUI().open(target, shop, 1);
+            }
             send(sender, "&aOpened shop &e" + shop.getId() + "&a for &e" + target.getName());
             return true;
         }

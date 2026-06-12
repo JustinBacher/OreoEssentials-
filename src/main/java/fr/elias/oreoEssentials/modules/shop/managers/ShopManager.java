@@ -122,6 +122,7 @@ public final class ShopManager {
         boolean hideBack = sec.getBoolean("hide-back-button", false);
         Shop shop = new Shop(shopId, title, rows, pages, currencyId);
         shop.setHideBackButton(hideBack);
+        shop.setDisplayMode(sec.getString("display-mode", module.getShopConfig().getDisplayMode()));
 
         // Per-shop GUI layout (optional gui: section)
         ShopGuiLayout layout = ShopGuiLayout.parse(
@@ -146,7 +147,7 @@ public final class ShopManager {
             for (String itemId : itemsSec.getKeys(false)) {
                 ConfigurationSection is = itemsSec.getConfigurationSection(itemId);
                 if (is == null) continue;
-                ShopItem item = parseItem(shopId, itemId, is);
+                ShopItem item = parseItem(shopId, itemId.toLowerCase(), is);
                 if (item != null) shop.addItem(item);
             }
         }

@@ -4,6 +4,11 @@
 # ─────────────────────────────────────────────────────
 enabled: true
 
+# ── Display Mode ──────────────────────────────────────
+# inventory: classic chest GUI (default)
+# dialog:    Paper Dialog API (requires Paper 1.21.6+)
+display-mode: inventory
+
 # ── Shop file deployment ───────────────────────────────
 # false (default): bundled shop YMLs are only created the very first time
 #                  (when the shops/ folder doesn't exist yet).

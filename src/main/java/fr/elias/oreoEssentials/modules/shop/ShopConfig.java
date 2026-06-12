@@ -62,6 +62,10 @@ public final class ShopConfig {
         return config.getBoolean("enabled", true);
     }
 
+    public String getDisplayMode() {
+        return config.getString("display-mode", "inventory");
+    }
+
     public long   getTransactionCooldown()      { return config.getLong("anti-dupe.transaction-cooldown-ms", 300L); }
     public boolean isAntiDupeEnabled()          { return config.getBoolean("anti-dupe.enabled", true); }
     public boolean isVerifyInventory()          { return config.getBoolean("anti-dupe.verify-inventory", true); }

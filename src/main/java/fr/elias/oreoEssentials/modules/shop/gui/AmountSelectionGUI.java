@@ -4,6 +4,7 @@ import fr.elias.oreoEssentials.modules.currency.CurrencyService;
 import fr.elias.oreoEssentials.modules.shop.ShopModule;
 import fr.elias.oreoEssentials.modules.shop.models.Shop;
 import fr.elias.oreoEssentials.modules.shop.models.ShopItem;
+import fr.elias.oreoEssentials.modules.shop.util.ShopUtils;
 import fr.minuskube.inv.ClickableItem;
 import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
@@ -221,11 +222,7 @@ public final class AmountSelectionGUI {
         }
 
         private int countOwned(Player player) {
-            int count = 0;
-            for (ItemStack s : player.getInventory().getContents()) {
-                if (s != null && s.getType() == shopItem.getMaterial()) count += s.getAmount();
-            }
-            return count;
+            return ShopUtils.countOwned(player, shopItem);
         }
 
         private String formatName() {

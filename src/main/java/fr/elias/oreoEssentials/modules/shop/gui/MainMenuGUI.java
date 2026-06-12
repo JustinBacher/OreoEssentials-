@@ -84,7 +84,12 @@ public final class MainMenuGUI implements InventoryProvider {
                         Lang.sendRaw(player, module.getShopConfig().getMessage("no-permission"));
                         return;
                     }
-                    module.getShopGUI().open(player, shop, 1);
+                    if ("dialog".equalsIgnoreCase(shop.getDisplayMode())) {
+                        player.closeInventory();
+                        module.getShopDialogManager().open(player, shop);
+                    } else {
+                        module.getShopGUI().open(player, shop, 1);
+                    }
                 }));
             }
         }
