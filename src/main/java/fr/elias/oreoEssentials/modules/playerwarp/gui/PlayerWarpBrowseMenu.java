@@ -5,6 +5,7 @@ import fr.elias.oreoEssentials.OreoEssentials;
 import fr.elias.oreoEssentials.modules.playerwarp.PlayerWarp;
 import fr.elias.oreoEssentials.modules.playerwarp.PlayerWarpService;
 import fr.elias.oreoEssentials.util.Lang;
+import fr.elias.oreoEssentials.util.TextInputDialog;
 import fr.minuskube.inv.ClickableItem;
 import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
@@ -28,6 +29,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -92,7 +95,7 @@ public class PlayerWarpBrowseMenu implements InventoryProvider {
                             "<red>Warp <yellow>%warp%</yellow> requires a password.</red>",
                             Map.of("warp", warp.getName()));
 
-                    openPasswordChatPrompt(player, warp);
+                    openPasswordChatPrompt(player, warp, pagination.getPage());
                     return;
                 }
 
@@ -136,7 +139,7 @@ public class PlayerWarpBrowseMenu implements InventoryProvider {
         }));
     }
 
-    private void openPasswordChatPrompt(Player player, PlayerWarp warp) {
+    private void openPasswordChatPrompt(Player player, PlayerWarp warp, int page) {
         OreoEssentials plugin = OreoEssentials.get();
 
         // Close the GUI so they clearly see the chat prompt
@@ -146,6 +149,21 @@ public class PlayerWarpBrowseMenu implements InventoryProvider {
             if (top != null) {
                 player.closeInventory();
             }
+        }
+
+        if (TextInputDialog.show(
+                player,
+                Component.text("Locked Warp", NamedTextColor.GOLD),
+                Component.text("Enter the password for " + warp.getName() + ".", NamedTextColor.GRAY),
+                "pw",
+                "Password",
+                "",
+                64,
+                "Teleport",
+                "Cancel",
+                (p, input) -> handlePasswordResult(p, warp, input),
+                () -> OreScheduler.run(plugin, () -> open(player, service)))) {
+            return;
         }
 
         if (plugin.getConfigService().isDebugEnabled()) plugin.getLogger().info("[PW/DEBUG] [CHAT] Waiting for password in chat for player "
@@ -182,6 +200,7 @@ public class PlayerWarpBrowseMenu implements InventoryProvider {
                     OreScheduler.run(plugin, () -> {
                         player.sendMessage(ChatColor.RED + "Password entry cancelled for warp "
                                 + ChatColor.AQUA + warp.getName());
+                        open(player, service);
                     });
                     return;
                 }

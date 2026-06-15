@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 public class PlayerWarpCommand implements OreoCommand {
 
     private final PlayerWarpService service;
+    private final fr.elias.oreoEssentials.modules.playerwarp.dialog.PlayerWarpDialogManager dialogManager;
     private final Map<UUID, Integer> extraWarps = new HashMap<>();
 
     /** File that persists admin-granted extra warp slots across restarts. */
@@ -56,8 +57,16 @@ public class PlayerWarpCommand implements OreoCommand {
 
     public PlayerWarpCommand(PlayerWarpService service) {
         this.service = service;
+        this.dialogManager =
+                new fr.elias.oreoEssentials.modules.playerwarp.dialog.PlayerWarpDialogManager(service);
         this.extraWarpsFile = new File(OreoEssentials.get().getDataFolder(), "playerwarps-extra.yml");
         loadExtraWarps();
+    }
+
+    /** True when the warp GUIs should render through the Paper Dialog API. */
+    private boolean useDialogMode() {
+        return fr.elias.oreoEssentials.util.DisplayMode.isDialog(
+                OreoEssentials.get().getPlayerWarpsConfig().getString("display-mode", null));
     }
 
     private void loadExtraWarps() {
@@ -186,7 +195,11 @@ public class PlayerWarpCommand implements OreoCommand {
                             Map.of());
                     return true;
                 }
-                fr.elias.oreoEssentials.modules.playerwarp.gui.PlayerWarpBrowseMenu.open(actor, service);
+                if (useDialogMode()) {
+                    dialogManager.openBrowse(actor);
+                } else {
+                    fr.elias.oreoEssentials.modules.playerwarp.gui.PlayerWarpBrowseMenu.open(actor, service);
+                }
                 return true;
             }
 
@@ -204,7 +217,11 @@ public class PlayerWarpCommand implements OreoCommand {
                             Map.of());
                     return true;
                 }
-                fr.elias.oreoEssentials.modules.playerwarp.gui.MyPlayerWarpsMenu.open(actor, service);
+                if (useDialogMode()) {
+                    dialogManager.openMyWarps(actor);
+                } else {
+                    fr.elias.oreoEssentials.modules.playerwarp.gui.MyPlayerWarpsMenu.open(actor, service);
+                }
                 return true;
             }
 

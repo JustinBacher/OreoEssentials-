@@ -23,6 +23,7 @@ public final class PortalConfig {
     private final File folder;
 
     // Cached values
+    private String displayMode;
     private String serverName;
     private long cooldownMs;
     private int maxPortalVolume;
@@ -50,6 +51,7 @@ public final class PortalConfig {
     public void reload() {
         YamlConfiguration cfg = YamlConfiguration.loadConfiguration(new File(folder, "config.yml"));
 
+        displayMode         = cfg.getString("display-mode", "default");
         serverName          = cfg.getString("server-name", "");
         cooldownMs          = cfg.getLong("cooldown-ms", 1000L);
         maxPortalVolume     = cfg.getInt("max-portal-volume", 100000);
@@ -76,6 +78,7 @@ public final class PortalConfig {
 
     public File getFolder()             { return folder; }
     public File getPortalsFile()        { return new File(folder, "portals.yml"); }
+    public String getDisplayMode()      { return displayMode; }
     public String getServerName()       { return serverName; }
     public long getCooldownMs()         { return cooldownMs; }
     public int getMaxPortalVolume()     { return maxPortalVolume; }

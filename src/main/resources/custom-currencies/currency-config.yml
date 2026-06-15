@@ -7,6 +7,11 @@ currency:
   # Enable the currency system
   enabled: true
 
+  # Admin GUI rendering. `default` follows menus.display-mode in config.yml; or pin
+  # `inventory` (chest GUI) / `dialog` (Paper Dialog API — real name/symbol/create inputs).
+  gui:
+    display-mode: default
+
   # Storage type: json or mongodb
   # - json: Local storage (single server only)
   # - mongodb: Uses main OreoEssentials MongoDB connection (cross-server)

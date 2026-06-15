@@ -75,16 +75,7 @@ public class CurrencyService {
             return CompletableFuture.completedFuture(false);
         }
 
-        Currency normalized = Currency.builder()
-                .id(id)
-                .name(currency.getName())
-                .symbol(currency.getSymbol())
-                .displayName(currency.getDisplayName())
-                .defaultBalance(currency.getDefaultBalance())
-                .tradeable(currency.isTradeable())
-                .crossServer(currency.isCrossServer())
-                .allowNegative(currency.isAllowNegative())
-                .build();
+        Currency normalized = normalizeCurrency(currency, id);
 
         if (currencyCache.containsKey(id)) {
             plugin.getLogger().warning("[Currency][DBG] createCurrency rejected (already in cache): " + id);
@@ -95,26 +86,28 @@ public class CurrencyService {
                 + ", crossServerCfg=" + config.isCrossServerEnabled()
                 + ", packetManager=" + (plugin.getPacketManager() == null ? "null" : "ok"));
 
-        return storage.saveCurrency(normalized).thenCompose(v -> {
-            currencyCache.put(id, normalized);
-            plugin.getLogger().info("[Currency] Created: " + normalized.getName() + " (" + normalized.getSymbol() + ")");
+        return persistCurrency(normalized, true);
+    }
 
-            // Broadcast to other servers if cross-server is enabled
-            if (config.isCrossServerEnabled() && plugin.getPacketManager() != null) {
-                plugin.getLogger().info("[Currency][DBG] Broadcasting CREATE for " + id
-                        + " (pmInit=" + plugin.getPacketManager().isInitialized() + ")");
-                broadcastCurrencySync(normalized, true);
-            } else {
-                plugin.getLogger().warning("[Currency][DBG] Not broadcasting CREATE. crossServer="
-                        + config.isCrossServerEnabled() + ", packetManager=" + (plugin.getPacketManager() != null));
-            }
+    public CompletableFuture<Boolean> updateCurrency(Currency currency) {
+        final String id = currency.getId() == null ? "" : currency.getId().toLowerCase(Locale.ROOT).trim();
+        if (id.isEmpty()) {
+            plugin.getLogger().warning("[Currency][DBG] updateCurrency called with empty id");
+            return CompletableFuture.completedFuture(false);
+        }
 
-            return reloadCurrenciesAsync()
-                    .thenApply(x -> true);
-        }).exceptionally(ex -> {
-            plugin.getLogger().warning("[Currency][DBG] createCurrency failed: " + ex.getMessage());
-            return false;
-        });
+        if (!currencyCache.containsKey(id)) {
+            plugin.getLogger().warning("[Currency][DBG] updateCurrency rejected (missing in cache): " + id);
+            return CompletableFuture.completedFuture(false);
+        }
+
+        Currency normalized = normalizeCurrency(currency, id);
+
+        plugin.getLogger().info("[Currency][DBG] updateCurrency saving to storage: id=" + id + ", name=" + normalized.getName()
+                + ", crossServerCfg=" + config.isCrossServerEnabled()
+                + ", packetManager=" + (plugin.getPacketManager() == null ? "null" : "ok"));
+
+        return persistCurrency(normalized, false);
     }
 
     public Currency getCurrency(String id) {
@@ -511,5 +504,44 @@ public class CurrencyService {
         try {
             plugin.getLogger().info("[Currency][DBG] Dump(" + reason + "): cacheKeys=" + currencyCache.keySet());
         } catch (Throwable ignored) {}
+    }
+
+    private Currency normalizeCurrency(Currency currency, String normalizedId) {
+        return Currency.builder()
+                .id(normalizedId)
+                .name(currency.getName())
+                .symbol(currency.getSymbol())
+                .displayName(currency.getDisplayName())
+                .defaultBalance(currency.getDefaultBalance())
+                .tradeable(currency.isTradeable())
+                .crossServer(currency.isCrossServer())
+                .allowNegative(currency.isAllowNegative())
+                .wholeNumbers(currency.isWholeNumbers())
+                .build();
+    }
+
+    private CompletableFuture<Boolean> persistCurrency(Currency currency, boolean created) {
+        final String id = currency.getId();
+        final String action = created ? "createCurrency" : "updateCurrency";
+
+        return storage.saveCurrency(currency).thenCompose(v -> {
+            currencyCache.put(id, currency);
+            plugin.getLogger().info("[Currency] " + (created ? "Created" : "Updated") + ": "
+                    + currency.getName() + " (" + currency.getSymbol() + ")");
+
+            if (config.isCrossServerEnabled() && plugin.getPacketManager() != null) {
+                plugin.getLogger().info("[Currency][DBG] Broadcasting " + (created ? "CREATE" : "UPSERT") + " for " + id
+                        + " (pmInit=" + plugin.getPacketManager().isInitialized() + ")");
+                broadcastCurrencySync(currency, true);
+            } else {
+                plugin.getLogger().warning("[Currency][DBG] Not broadcasting " + (created ? "CREATE" : "UPSERT") + ". crossServer="
+                        + config.isCrossServerEnabled() + ", packetManager=" + (plugin.getPacketManager() != null));
+            }
+
+            return reloadCurrenciesAsync().thenApply(x -> true);
+        }).exceptionally(ex -> {
+            plugin.getLogger().warning("[Currency][DBG] " + action + " failed: " + ex.getMessage());
+            return false;
+        });
     }
 }

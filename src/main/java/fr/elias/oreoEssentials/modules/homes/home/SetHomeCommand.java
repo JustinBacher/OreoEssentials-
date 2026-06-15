@@ -6,6 +6,9 @@ import fr.elias.oreoEssentials.config.ConfigService;
 import fr.elias.oreoEssentials.util.Async;
 import fr.elias.oreoEssentials.util.Lang;
 import fr.elias.oreoEssentials.util.OreScheduler;
+import fr.elias.oreoEssentials.util.TextInputDialog;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -31,10 +34,36 @@ public class SetHomeCommand implements OreoCommand {
 
     @Override
     public boolean execute(CommandSender sender, String label, String[] args) {
-        if (args.length < 1) return false;
-
         Player p = (Player) sender;
-        String rawName = args[0];
+        if (args.length < 1) {
+            if (TextInputDialog.show(
+                    p,
+                    Component.text("Set Home", NamedTextColor.GOLD),
+                    Component.text("Enter a name for this home.", NamedTextColor.GRAY),
+                    "name",
+                    "Home name",
+                    "",
+                    32,
+                    "Set Home",
+                    "Cancel",
+                    (player, input) -> submit(player, input),
+                    null)) {
+                return true;
+            }
+            return false;
+        }
+
+        submit(p, args[0]);
+        return true;
+    }
+
+    private void submit(Player p, String rawName) {
+        if (rawName == null || rawName.isBlank()) {
+            Lang.send(p, "sethome.empty",
+                    "<red>Home name cannot be empty.</red>");
+            return;
+        }
+
         String key = rawName.toLowerCase(Locale.ROOT);
         Location loc = p.getLocation();
 
@@ -56,7 +85,5 @@ public class SetHomeCommand implements OreoCommand {
                 }
             });
         });
-
-        return true;
     }
 }

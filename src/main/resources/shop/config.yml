@@ -5,9 +5,11 @@
 enabled: true
 
 # ── Display Mode ──────────────────────────────────────
-# inventory: classic chest GUI (default)
+# default:   follow the global menus.display-mode in config.yml
+# inventory: classic chest GUI
 # dialog:    Paper Dialog API (requires Paper 1.21.6+)
-display-mode: inventory
+# (per-shop `display-mode` in shops.yml overrides this; it also accepts `default`)
+display-mode: default
 
 # ── Shop file deployment ───────────────────────────────
 # false (default): bundled shop YMLs are only created the very first time

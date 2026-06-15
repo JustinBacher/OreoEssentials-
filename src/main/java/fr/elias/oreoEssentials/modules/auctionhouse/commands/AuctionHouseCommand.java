@@ -29,7 +29,11 @@ public final class AuctionHouseCommand implements CommandExecutor {
             p.sendMessage(module.getConfig().getMessage("errors.no-permission"));
             return true;
         }
-        BrowseGUI.getInventory(module).open(p);
+        if (module.useDialogMode()) {
+            module.getDialogManager().openBrowse(p);
+        } else {
+            BrowseGUI.getInventory(module).open(p);
+        }
         return true;
     }
 }

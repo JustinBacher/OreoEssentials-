@@ -1,6 +1,7 @@
 package fr.elias.oreoEssentials.modules.auctionhouse;
 
 import fr.elias.oreoEssentials.OreoEssentials;
+import fr.elias.oreoEssentials.modules.auctionhouse.dialog.AuctionDialogManager;
 import fr.elias.oreoEssentials.modules.auctionhouse.gui.BrowseGUI;
 import fr.elias.oreoEssentials.modules.currency.CurrencyService;
 import fr.elias.oreoEssentials.modules.auctionhouse.models.Auction;
@@ -36,6 +37,7 @@ public final class AuctionHouseModule {
     private AuctionHouseConfig cfg;
     private AuctionStorage storage;
     private Economy economy;
+    private final AuctionDialogManager dialogManager = new AuctionDialogManager(this);
 
     private final List<Auction> activeAuctions  = new CopyOnWriteArrayList<>();
     private final List<Auction> expiredAuctions = new CopyOnWriteArrayList<>();
@@ -180,6 +182,115 @@ public final class AuctionHouseModule {
         return true;
     }
 
+    /**
+     * Dialog-flow listing creation. Unlike {@link #createAuction}, the item to list
+     * is selected from the seller's inventory (not the main hand), so we must remove
+     * it ourselves.
+     *
+     * <p><b>Atomicity:</b> the dialog captures the picked item on one tick and the
+     * player confirms several ticks later, so the stack may have moved or been
+     * consumed in between. We re-validate and atomically remove {@code amount} of
+     * {@code template} <i>before</i> creating the listing — preventing ghost/dupe
+     * listings. The listing fee is secured first; if the items have vanished by the
+     * time we remove them, the fee is refunded and the listing is aborted. If the
+     * fee cannot be paid, nothing is removed.
+     *
+     * @param onResult invoked on the entity thread with {@code null} on success or a
+     *                 ready-to-send error message on failure.
+     */
+    public void createListingFromInventory(Player seller, ItemStack template, int amount,
+                                           double price, long durationHours,
+                                           AuctionCategory category, String currencyId,
+                                           java.util.function.Consumer<String> onResult) {
+        if (!enabled()) { onResult.accept("§cThe auction house is currently disabled."); return; }
+        if (currencyId != null && currencyId.isBlank()) currencyId = null;
+        if (template == null || template.getType().isAir() || amount <= 0) {
+            onResult.accept(cfg.getMessage("errors.no-item-in-hand")); return;
+        }
+        if (price < cfg.minPrice() || price > cfg.maxPrice()) {
+            onResult.accept(cfg.getMessage("errors.invalid-price",
+                    Map.of("min", String.valueOf(cfg.minPrice()), "max", String.valueOf(cfg.maxPrice()))));
+            return;
+        }
+        final long dur = Math.min(durationHours, cfg.maxDurationHours());
+        if (getPlayerActiveListings(seller.getUniqueId()).size() >= cfg.maxListingsPerPlayer()) {
+            onResult.accept(cfg.getMessage("errors.max-listings",
+                    Map.of("max", String.valueOf(cfg.maxListingsPerPlayer()))));
+            return;
+        }
+
+        final ItemStack match = template.clone();
+        match.setAmount(1);
+        if (!seller.getInventory().containsAtLeast(match, amount)) {
+            onResult.accept("§cThat item is no longer in your inventory — listing aborted.");
+            return;
+        }
+
+        final String cid = currencyId;
+        final double fee = (price * cfg.listingFeePercent() / 100.0) + cfg.listingFeeFlat();
+
+        // Remove first (atomic, this tick), then charge the fee; refund items if the
+        // fee cannot be paid. This keeps item removal and listing creation together.
+        final ItemStack listed = template.clone();
+        listed.setAmount(amount);
+        ItemStack toRemove = match.clone();
+        toRemove.setAmount(amount);
+        Map<Integer, ItemStack> leftover = seller.getInventory().removeItem(toRemove);
+        if (!leftover.isEmpty()) {
+            // Could not remove the full amount — give back whatever was taken and abort.
+            int returned = amount - leftover.values().stream().mapToInt(ItemStack::getAmount).sum();
+            if (returned > 0) {
+                ItemStack back = match.clone();
+                back.setAmount(returned);
+                giveOrDrop(seller, back);
+            }
+            onResult.accept("§cThat item is no longer in your inventory — listing aborted.");
+            return;
+        }
+
+        if (fee <= 0) {
+            finalizeAuctionCreate(seller, listed, price, dur, category, cid, false);
+            onResult.accept(null);
+            return;
+        }
+
+        CurrencyService cs = (cid != null) ? plugin.getCurrencyService() : null;
+        if (cs != null) {
+            cs.getBalance(seller.getUniqueId(), cid).thenAccept(balance ->
+                    OreScheduler.runForEntity(plugin, seller, () -> {
+                        if (!seller.isOnline()) { giveOrDrop(seller, listed); return; }
+                        if (balance < fee) {
+                            giveOrDrop(seller, listed);
+                            onResult.accept(cfg.getMessage("errors.not-enough-money"));
+                            return;
+                        }
+                        cs.withdraw(seller.getUniqueId(), cid, fee).thenAccept(unused ->
+                                OreScheduler.runForEntity(plugin, seller, () -> {
+                                    finalizeAuctionCreate(seller, listed, price, dur, category, cid, false);
+                                    onResult.accept(null);
+                                }));
+                    }));
+            return;
+        }
+
+        if (economy != null) {
+            if (!economy.has(seller, fee)) {
+                giveOrDrop(seller, listed);
+                onResult.accept(cfg.getMessage("errors.not-enough-money"));
+                return;
+            }
+            economy.withdrawPlayer(seller, fee);
+        }
+        finalizeAuctionCreate(seller, listed, price, dur, category, cid, false);
+        onResult.accept(null);
+    }
+
+    /** Adds an item to the player's inventory, dropping any overflow at their feet. */
+    private void giveOrDrop(Player player, ItemStack item) {
+        Map<Integer, ItemStack> overflow = player.getInventory().addItem(item);
+        overflow.values().forEach(i -> player.getWorld().dropItemNaturally(player.getLocation(), i));
+    }
+
     public boolean purchaseAuction(Player buyer, String auctionId) {
         Auction auction = activeAuctions.stream()
                 .filter(a -> a.getId().equals(auctionId))
@@ -235,6 +346,18 @@ public final class AuctionHouseModule {
 
     private void finalizeAuctionCreate(Player seller, ItemStack item, double price,
                                        long durationHours, AuctionCategory category, String currencyId) {
+        finalizeAuctionCreate(seller, item, price, durationHours, category, currencyId, true);
+    }
+
+    /**
+     * @param clearHand when true (chest-GUI / chat flow) the listed item is wiped
+     *                  from the seller's main hand. The dialog flow passes false:
+     *                  it has already atomically removed the picked stack from the
+     *                  inventory, so clearing the hand would destroy an unrelated item.
+     */
+    private void finalizeAuctionCreate(Player seller, ItemStack item, double price,
+                                       long durationHours, AuctionCategory category, String currencyId,
+                                       boolean clearHand) {
         Auction auction = new Auction(seller.getUniqueId(), seller.getName(), item,
                 price, durationHours * 3_600_000L, category);
         auction.setCurrencyId(currencyId);
@@ -244,7 +367,7 @@ public final class AuctionHouseModule {
         broadcastSync(AuctionSyncPacket.create(serverName(), auction));
         seller.sendMessage(cfg.getMessage("listing.created",
                 Map.of("price", formatMoney(price, currencyId), "duration", durationHours + "h")));
-        seller.getInventory().setItemInMainHand(null);
+        if (clearHand) seller.getInventory().setItemInMainHand(null);
         playSound(seller, Sound.ENTITY_PLAYER_LEVELUP);
 
         if (cfg.discordEnabled()) {
@@ -411,6 +534,10 @@ public final class AuctionHouseModule {
     public OreoEssentials   getPlugin()  { return plugin; }
     public AuctionHouseConfig getConfig(){ return cfg; }
     public Economy          getEconomy() { return economy; }
+    public AuctionDialogManager getDialogManager() { return dialogManager; }
+
+    /** True when the auction house should render via the Paper Dialog API. */
+    public boolean useDialogMode() { return cfg != null && fr.elias.oreoEssentials.util.DisplayMode.isDialog(cfg.displayMode()); }
 
     /** Format using Vault (for balance display etc.) */
     public String formatMoney(double amount) {

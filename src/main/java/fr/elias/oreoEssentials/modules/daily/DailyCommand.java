@@ -28,6 +28,10 @@ public final class DailyCommand implements CommandExecutor, TabCompleter {
     }
 
     private void open(Player p) {
+        if (fr.elias.oreoEssentials.util.DisplayMode.isDialog(cfg.displayMode)) {
+            new DailyDialogManager(plugin, cfg, svc, rewards).openDaily(p);
+            return;
+        }
         SmartInventory inv = new DailyMenu(plugin, cfg, svc, rewards).inventory(p);
         inv.open(p);
     }

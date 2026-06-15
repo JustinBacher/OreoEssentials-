@@ -20,6 +20,7 @@ public final class OrdersConfig {
     private final File folder;
 
     private boolean enabled;
+    private String  displayMode;
     private boolean debug;
     private String  storageType;          // "mongodb" | "sqlite"
     private String  sqliteFile;
@@ -74,6 +75,7 @@ public final class OrdersConfig {
         lang = YamlConfiguration.loadConfiguration(langFile);
 
         enabled     = settings.getBoolean("orders.enabled", true);
+        displayMode = settings.getString("orders.display-mode", "default").toLowerCase(Locale.ROOT);
         debug       = settings.getBoolean("orders.debug", false);
         storageType = settings.getString("orders.storage.type", "sqlite").toLowerCase(Locale.ROOT);
         sqliteFile  = settings.getString("orders.storage.sqlite.file", "orders.db");
@@ -138,6 +140,8 @@ public final class OrdersConfig {
 
 
     public boolean enabled()                   { return enabled; }
+    /** "inventory" (default) or "dialog" (Paper Dialog API). */
+    public String  displayMode()               { return displayMode; }
     public boolean debug()                     { return debug; }
     public String  storageType()               { return storageType; }
     public String  sqliteFile()                { return sqliteFile; }

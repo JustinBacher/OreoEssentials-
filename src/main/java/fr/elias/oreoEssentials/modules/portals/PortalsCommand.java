@@ -54,7 +54,11 @@ public class PortalsCommand implements CommandExecutor, TabCompleter {
                     Lang.send(sender, "portals.no-permission", "<red>You don't have permission.</red>");
                     return true;
                 }
-                PortalListGUI.getInventory(manager).open(p);
+                if (fr.elias.oreoEssentials.util.DisplayMode.isDialog(manager.getConfig().getDisplayMode())) {
+                    new fr.elias.oreoEssentials.modules.portals.gui.PortalsDialogManager(manager).openList(p);
+                } else {
+                    PortalListGUI.getInventory(manager).open(p);
+                }
                 return true;
             }
             case "pos1" -> {

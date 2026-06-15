@@ -50,7 +50,12 @@ public class CurrencyAdminCommand implements OreoCommand {
     public boolean execute(CommandSender sender, String label, String[] args) {
         Player player = (Player) sender;
 
-        CurrencyAdminGUI.getInventory(plugin).open(player);
+        if (fr.elias.oreoEssentials.util.DisplayMode.isDialog(
+                plugin.getCurrencyConfig().getConfig().getString("currency.gui.display-mode", null))) {
+            new fr.elias.oreoEssentials.modules.currency.gui.CurrencyDialogManager(plugin).openAdmin(player);
+        } else {
+            CurrencyAdminGUI.getInventory(plugin).open(player);
+        }
 
         return true;
     }

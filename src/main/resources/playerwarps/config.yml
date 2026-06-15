@@ -2,6 +2,11 @@
 # Controls how many warps each player / rank can create.
 # The plugin checks permissions in order and uses the highest value.
 
+# How the /pw gui and /pw mywarps menus are rendered. `default` follows the global
+# menus.display-mode in config.yml; pin to `inventory` (chest GUIs) or `dialog`
+# (Paper 1.21.6+ Dialog API — password prompt + edits become text inputs).
+display-mode: default
+
 limit:
   default: 3     # Default max warps for all players
 

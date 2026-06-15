@@ -83,10 +83,15 @@ public class CurrencyEditGUI implements InventoryProvider {
                             .wholeNumbers(currency.isWholeNumbers())
                             .build();
 
-                    plugin.getCurrencyService().createCurrency(updated).thenRun(() -> {
-                        player.sendMessage("§a✔ Toggled tradeable to: " + !currency.isTradeable());
-                        getInventory(plugin, updated).open(player);
-                    });
+                    plugin.getCurrencyService().updateCurrency(updated).thenAccept(success ->
+                            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                                if (!success) {
+                                    player.sendMessage("§c✖ Failed to update tradeable setting.");
+                                    return;
+                                }
+                                player.sendMessage("§a✔ Toggled tradeable to: " + !currency.isTradeable());
+                                getInventory(plugin, updated).open(player);
+                            }));
                 }
         ));
 
@@ -114,10 +119,15 @@ public class CurrencyEditGUI implements InventoryProvider {
                             .wholeNumbers(currency.isWholeNumbers())
                             .build();
 
-                    plugin.getCurrencyService().createCurrency(updated).thenRun(() -> {
-                        player.sendMessage("§a✔ Toggled allow negative to: " + !currency.isAllowNegative());
-                        getInventory(plugin, updated).open(player);
-                    });
+                    plugin.getCurrencyService().updateCurrency(updated).thenAccept(success ->
+                            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                                if (!success) {
+                                    player.sendMessage("§c✖ Failed to update allow-negative setting.");
+                                    return;
+                                }
+                                player.sendMessage("§a✔ Toggled allow negative to: " + !currency.isAllowNegative());
+                                getInventory(plugin, updated).open(player);
+                            }));
                 }
         ));
 
@@ -152,10 +162,15 @@ public class CurrencyEditGUI implements InventoryProvider {
                             .wholeNumbers(currency.isWholeNumbers())
                             .build();
 
-                    plugin.getCurrencyService().createCurrency(updated).thenRun(() -> {
-                        player.sendMessage("§a✔ Toggled cross-server to: " + !currency.isCrossServer());
-                        getInventory(plugin, updated).open(player);
-                    });
+                    plugin.getCurrencyService().updateCurrency(updated).thenAccept(success ->
+                            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                                if (!success) {
+                                    player.sendMessage("§c✖ Failed to update cross-server setting.");
+                                    return;
+                                }
+                                player.sendMessage("§a✔ Toggled cross-server to: " + !currency.isCrossServer());
+                                getInventory(plugin, updated).open(player);
+                            }));
                 }
         ));
 
@@ -185,10 +200,15 @@ public class CurrencyEditGUI implements InventoryProvider {
                             .wholeNumbers(!currency.isWholeNumbers())
                             .build();
 
-                    plugin.getCurrencyService().createCurrency(updated).thenRun(() -> {
-                        player.sendMessage("§a✔ Toggled whole numbers to: " + !currency.isWholeNumbers());
-                        getInventory(plugin, updated).open(player);
-                    });
+                    plugin.getCurrencyService().updateCurrency(updated).thenAccept(success ->
+                            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                                if (!success) {
+                                    player.sendMessage("§c✖ Failed to update whole-number setting.");
+                                    return;
+                                }
+                                player.sendMessage("§a✔ Toggled whole numbers to: " + !currency.isWholeNumbers());
+                                getInventory(plugin, updated).open(player);
+                            }));
                 }
         ));
 

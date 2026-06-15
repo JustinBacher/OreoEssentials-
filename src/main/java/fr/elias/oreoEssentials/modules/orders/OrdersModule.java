@@ -31,6 +31,8 @@ public final class OrdersModule {
     private OrdersEventBus            eventBus;
     private OrderService              service;
     private OrdersGuiManager          guiManager;
+    private final fr.elias.oreoEssentials.modules.orders.dialog.OrderDialogManager dialogManager =
+            new fr.elias.oreoEssentials.modules.orders.dialog.OrderDialogManager(this);
 
     private boolean ready = false;
 
@@ -132,6 +134,10 @@ public final class OrdersModule {
     public OrdersGuiManager    getGuiManager() { return guiManager; }
     public OrderCurrencyAdapter getCurrency()  { return currency; }
     public OrdersEventBus      getEventBus()   { return eventBus; }
+    public fr.elias.oreoEssentials.modules.orders.dialog.OrderDialogManager getDialogManager() { return dialogManager; }
+
+    /** True when the Orders/Market module should render via the Paper Dialog API. */
+    public boolean useDialogMode() { return cfg != null && fr.elias.oreoEssentials.util.DisplayMode.isDialog(cfg.displayMode()); }
 
 
     private boolean initRepository() {

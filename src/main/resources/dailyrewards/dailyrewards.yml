@@ -31,6 +31,8 @@ Join:
     - ""
 
 GUI:
+  # `default` follows menus.display-mode in config.yml; or pin inventory / dialog
+  DisplayMode: default
   InventoryRows: 6
   ShowDayQuantity: true
   CloseOnClaim: false

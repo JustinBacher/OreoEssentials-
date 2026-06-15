@@ -53,8 +53,12 @@ public final class OrderCommand implements OreoCommand {
             return true;
         }
 
-        // Default: open browser
-        OrderBrowserMenu.getInventory(module).open(player);
+        // Default: open browser (Dialog API or chest GUI per display-mode)
+        if (module.useDialogMode()) {
+            module.getDialogManager().openBrowse(player);
+        } else {
+            OrderBrowserMenu.getInventory(module).open(player);
+        }
         return true;
     }
 

@@ -47,7 +47,7 @@ public class ManageGUI implements InventoryProvider {
                     cfg.guiNameRaw("manage", "no-listings", "&c&lNo Active Listings"));
             ItemMeta m = none.getItemMeta();
             m.setLore(cfg.guiLoreRaw("manage", "no-listings",
-                    List.of(c("&7Use &e/ahs <price> &7to list an item!"))));
+                    List.of(c("&7Use &e/ahs sell &7to start a listing."))));
             none.setItemMeta(m);
             contents.set(slot / 9, slot % 9, ClickableItem.empty(none));
         } else {

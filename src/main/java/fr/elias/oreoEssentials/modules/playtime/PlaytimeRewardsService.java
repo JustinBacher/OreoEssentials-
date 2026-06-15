@@ -29,6 +29,8 @@ public final class PlaytimeRewardsService {
         public Material fillerMat = Material.GRAY_STAINED_GLASS_PANE;
         public String fillerName = "&7";
         public int fillerCmd = 0;
+        /** "default" (inherit menus.display-mode), "inventory" (chest GUI) or "dialog". */
+        public String displayMode = "default";
         public Map<String, SkinState> states = new HashMap<>();
     }
 
@@ -101,6 +103,7 @@ public final class PlaytimeRewardsService {
                 Material.GRAY_STAINED_GLASS_PANE);
         skin.fillerName = cfg.getString("settings.gui.filler.name", "&7");
         skin.fillerCmd  = cfg.getInt("settings.gui.filler.custom-model-data", 0);
+        skin.displayMode = cfg.getString("settings.gui.display-mode", "default");
         skin.states.clear();
         ConfigurationSection st = cfg.getConfigurationSection("settings.gui.states");
         if (st != null) {

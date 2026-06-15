@@ -53,7 +53,12 @@ public class OeSettingsCommand implements OreoCommand {
             return true;
         }
 
-        OeSettingsMenu.getInventory(plugin).open(player);
+        if (fr.elias.oreoEssentials.util.DisplayMode.isDialog(plugin.getSettingsConfig().raw()
+                .getString("settings-gui.display-mode", null))) {
+            new fr.elias.oreoEssentials.config.menu.OeSettingsDialogManager(plugin).openSettings(player);
+        } else {
+            OeSettingsMenu.getInventory(plugin).open(player);
+        }
         return true;
     }
 }

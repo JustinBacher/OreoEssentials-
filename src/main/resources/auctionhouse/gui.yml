@@ -123,7 +123,7 @@ manage:
       material: BARRIER
       name: "&c&lNo Active Listings"
       lore:
-        - "&7Use &e/ahs <price> &7to list an item!"
+        - "&7Use &e/ahs sell &7to start a listing."
 
 # ─────────────────────────────────────
 # Menu de confirmation d'achat

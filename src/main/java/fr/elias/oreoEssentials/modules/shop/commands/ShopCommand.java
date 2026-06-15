@@ -36,7 +36,11 @@ public final class ShopCommand implements CommandExecutor, TabCompleter {
                 send(player, module.getShopConfig().getMessage("no-permission"));
                 return true;
             }
-            module.getMainMenuGUI().open(player);
+            if (fr.elias.oreoEssentials.util.DisplayMode.isDialog(module.getShopConfig().getDisplayMode())) {
+                module.getShopDialogManager().openAllShops(player);
+            } else {
+                module.getMainMenuGUI().open(player);
+            }
             return true;
         }
 
@@ -169,7 +173,7 @@ public final class ShopCommand implements CommandExecutor, TabCompleter {
             }
             Shop shop = module.getShopManager().getShop(args[0]);
             if (shop != null) {
-                if ("dialog".equalsIgnoreCase(shop.getDisplayMode())) {
+                if (fr.elias.oreoEssentials.util.DisplayMode.isDialog(shop.getDisplayMode())) {
                     module.getShopDialogManager().open(player, shop);
                 } else {
                     module.getShopGUI().open(player, shop, 1);
@@ -192,7 +196,7 @@ public final class ShopCommand implements CommandExecutor, TabCompleter {
                 send(sender, module.getShopConfig().getMessage("shop-not-found").replace("{shop}", args[1]));
                 return true;
             }
-            if ("dialog".equalsIgnoreCase(shop.getDisplayMode())) {
+            if (fr.elias.oreoEssentials.util.DisplayMode.isDialog(shop.getDisplayMode())) {
                 module.getShopDialogManager().open(target, shop);
             } else {
                 module.getShopGUI().open(target, shop, 1);

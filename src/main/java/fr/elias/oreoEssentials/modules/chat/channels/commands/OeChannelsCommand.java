@@ -2,6 +2,7 @@ package fr.elias.oreoEssentials.modules.chat.channels.commands;
 
 import fr.elias.oreoEssentials.OreoEssentials;
 import fr.elias.oreoEssentials.modules.chat.channels.ChatChannelManager;
+import fr.elias.oreoEssentials.modules.chat.channels.gui.ChannelsDialogManager;
 import fr.elias.oreoEssentials.modules.chat.channels.gui.ChannelsGUI;
 import fr.elias.oreoEssentials.commands.OreoCommand;
 import org.bukkit.command.CommandSender;
@@ -13,10 +14,18 @@ public class OeChannelsCommand implements OreoCommand {
 
     private final OreoEssentials plugin;
     private final ChatChannelManager channelManager;
+    private final ChannelsDialogManager dialogManager;
 
     public OeChannelsCommand(OreoEssentials plugin, ChatChannelManager channelManager) {
         this.plugin = plugin;
         this.channelManager = channelManager;
+        this.dialogManager = new ChannelsDialogManager(plugin, channelManager);
+    }
+
+    /** True when the channel switcher should render through the Paper Dialog API. */
+    private boolean useDialogMode() {
+        return fr.elias.oreoEssentials.util.DisplayMode.isDialog(plugin.getChatConfig()
+                .getCustomConfig().getString("chat.channels.gui.display-mode", null));
     }
 
     @Override
@@ -56,7 +65,11 @@ public class OeChannelsCommand implements OreoCommand {
             return true;
         }
 
-        ChannelsGUI.getInventory(plugin, channelManager).open(player);
+        if (useDialogMode()) {
+            dialogManager.openChannels(player);
+        } else {
+            ChannelsGUI.getInventory(plugin, channelManager).open(player);
+        }
         return true;
     }
 

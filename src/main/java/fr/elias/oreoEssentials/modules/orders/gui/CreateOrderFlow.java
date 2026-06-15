@@ -2,6 +2,7 @@ package fr.elias.oreoEssentials.modules.orders.gui;
 
 import fr.elias.oreoEssentials.modules.currency.Currency;
 import fr.elias.oreoEssentials.modules.orders.OrdersModule;
+import fr.elias.oreoEssentials.util.TextInputDialog;
 import fr.minuskube.inv.ClickableItem;
 import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
@@ -12,6 +13,8 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +58,20 @@ public final class CreateOrderFlow {
 
     public static void startQtyInput(OrdersModule module, Player p, ItemStack item) {
         p.closeInventory();
+        if (TextInputDialog.show(
+                p,
+                Component.text("Order Quantity", NamedTextColor.GOLD),
+                Component.text("Enter how many items the order should request.", NamedTextColor.GRAY),
+                "qty",
+                "Quantity",
+                "",
+                9,
+                "Next",
+                "Cancel",
+                (player, input) -> consumeQtyValue(module, player, input, new PendingQty(item)),
+                () -> ConfirmItemMenu.getInventory(module, item).open(p))) {
+            return;
+        }
         waitingQty.put(p.getUniqueId(), new PendingQty(item));
         p.sendMessage(module.getConfig().msg("create.enter-qty"));
     }
@@ -64,22 +81,22 @@ public final class CreateOrderFlow {
     }
 
     public static boolean consumeQtyInput(OrdersModule module, Player p, String raw) {
-        module.getPlugin().getLogger().info("[Orders] consumeQtyInput called for " + p.getName() + " raw='" + raw + "'");
         PendingQty pq = waitingQty.remove(p.getUniqueId());
-        if (pq == null) {
-            module.getPlugin().getLogger().warning("[Orders] consumeQtyInput: no pending state for " + p.getName());
-            return false;
-        }
+        if (pq == null) return false;
+        return consumeQtyValue(module, p, raw, pq);
+    }
+
+    private static boolean consumeQtyValue(OrdersModule module, Player p, String raw, PendingQty pq) {
         int qty;
         try { qty = Integer.parseInt(raw.trim()); } catch (NumberFormatException e) {
-            waitingQty.put(p.getUniqueId(), pq);
             p.sendMessage(module.getConfig().msg("create.invalid-qty"));
+            reopenQtyDialog(module, p, pq);
             return true;
         }
         if (qty <= 0 || qty > module.getConfig().maxQtyPerOrder()) {
-            waitingQty.put(p.getUniqueId(), pq);
             p.sendMessage(module.getConfig().msg("create.invalid-qty-range",
                     Map.of("max", String.valueOf(module.getConfig().maxQtyPerOrder()))));
+            reopenQtyDialog(module, p, pq);
             return true;
         }
         // Move to step 3 — open currency picker on main thread
@@ -87,12 +104,8 @@ public final class CreateOrderFlow {
         fr.elias.oreoEssentials.util.OreScheduler.run(module.getPlugin(), () -> {
             if (!p.isOnline()) return;
             try {
-                module.getPlugin().getLogger().info("[Orders] Opening CurrencyPickerMenu for " + p.getName());
                 CurrencyPickerMenu.getInventory(module, pq.item(), finalQty).open(p);
-                module.getPlugin().getLogger().info("[Orders] CurrencyPickerMenu opened for " + p.getName());
             } catch (Throwable t) {
-                module.getPlugin().getLogger().severe("[Orders] Failed to open CurrencyPickerMenu for " + p.getName() + ": " + t);
-                t.printStackTrace();
                 p.sendMessage(module.getConfig().msg("create.invalid-qty"));
             }
         });
@@ -103,6 +116,20 @@ public final class CreateOrderFlow {
     public static void startPriceInput(OrdersModule module, Player p,
                                        ItemStack item, int qty, String currencyId) {
         p.closeInventory();
+        if (TextInputDialog.show(
+                p,
+                Component.text("Order Price", NamedTextColor.GOLD),
+                Component.text("Enter the unit price for this order.", NamedTextColor.GRAY),
+                "price",
+                "Unit price",
+                "",
+                16,
+                "Next",
+                "Cancel",
+                (player, input) -> consumePriceValue(module, player, input, new PendingPrice(item, qty, currencyId)),
+                () -> CurrencyPickerMenu.getInventory(module, item, qty).open(p))) {
+            return;
+        }
         waitingPrice.put(p.getUniqueId(), new PendingPrice(item, qty, currencyId));
         p.sendMessage(module.getConfig().msg("create.enter-price",
                 Map.of("currency", module.getCurrency().currencyDisplayName(currencyId))));
@@ -115,23 +142,43 @@ public final class CreateOrderFlow {
     public static boolean consumePriceInput(OrdersModule module, Player p, String raw) {
         PendingPrice pp = waitingPrice.remove(p.getUniqueId());
         if (pp == null) return false;
+        return consumePriceValue(module, p, raw, pp);
+    }
+
+    private static boolean consumePriceValue(OrdersModule module, Player p, String raw, PendingPrice pp) {
         double price;
         try { price = Double.parseDouble(raw.trim().replace(',', '.')); }
         catch (NumberFormatException e) {
-            waitingPrice.put(p.getUniqueId(), pp);
             p.sendMessage(module.getConfig().msg("create.invalid-price"));
+            reopenPriceDialog(module, p, pp);
             return true;
         }
         if (price < module.getConfig().minUnitPrice()) {
-            waitingPrice.put(p.getUniqueId(), pp);
             p.sendMessage(module.getConfig().msg("create.price-too-low",
                     Map.of("min", String.format("%.2f", module.getConfig().minUnitPrice()))));
+            reopenPriceDialog(module, p, pp);
             return true;
         }
         final double finalPrice = price;
         fr.elias.oreoEssentials.util.OreScheduler.run(module.getPlugin(), () ->
                 ConfirmOrderMenu.getInventory(module, pp.item(), pp.qty(), pp.currencyId(), finalPrice).open(p));
         return true;
+    }
+
+    private static void reopenQtyDialog(OrdersModule module, Player p, PendingQty pq) {
+        if (!TextInputDialog.supported(p)) {
+            waitingQty.put(p.getUniqueId(), pq);
+            return;
+        }
+        startQtyInput(module, p, pq.item());
+    }
+
+    private static void reopenPriceDialog(OrdersModule module, Player p, PendingPrice pp) {
+        if (!TextInputDialog.supported(p)) {
+            waitingPrice.put(p.getUniqueId(), pp);
+            return;
+        }
+        startPriceInput(module, p, pp.item(), pp.qty(), pp.currencyId());
     }
 
 

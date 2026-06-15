@@ -2,6 +2,7 @@ package fr.elias.oreoEssentials.modules.mail;
 
 import fr.elias.oreoEssentials.OreoEssentials;
 import fr.elias.oreoEssentials.commands.OreoCommand;
+import fr.elias.oreoEssentials.modules.mail.dialog.MailDialogManager;
 import fr.elias.oreoEssentials.modules.mail.gui.MailboxMenu;
 import fr.elias.oreoEssentials.util.Lang;
 import org.bukkit.Bukkit;
@@ -40,10 +41,18 @@ public final class MailCommand implements OreoCommand, TabCompleter {
 
     private final OreoEssentials plugin;
     private final MailService     mail;
+    private final MailDialogManager dialogManager;
 
     public MailCommand(OreoEssentials plugin, MailService mail) {
         this.plugin = plugin;
         this.mail   = mail;
+        this.dialogManager = new MailDialogManager(plugin, mail);
+    }
+
+    /** True when the mailbox should render through the Paper Dialog API. */
+    private boolean useDialogMode() {
+        return fr.elias.oreoEssentials.util.DisplayMode.isDialog(
+                plugin.getConfig().getString("mail.display-mode", null));
     }
 
     @Override public String       name()       { return "mail"; }
@@ -58,7 +67,11 @@ public final class MailCommand implements OreoCommand, TabCompleter {
         // No args → open GUI (players only) or show usage (console)
         if (args.length == 0) {
             if (sender instanceof Player p) {
-                MailboxMenu.getInventory(plugin, mail).open(p);
+                if (useDialogMode()) {
+                    dialogManager.openMailbox(p);
+                } else {
+                    MailboxMenu.getInventory(plugin, mail).open(p);
+                }
             } else {
                 sendUsage(sender, label);
             }

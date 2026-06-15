@@ -256,6 +256,10 @@ public final class OreoEssentials extends JavaPlugin {
     public CurrencyService getCurrencyService() { return currencyService; }
     public CurrencyConfig getCurrencyConfig() { return currencyConfig; }
 
+    private fr.elias.oreoEssentials.util.font.FontIconService fontIconService;
+    /** Resolves item/block font glyphs for Paper dialog GUIs (resource-pack font; off by default). */
+    public fr.elias.oreoEssentials.util.font.FontIconService getFontIconService() { return fontIconService; }
+
     private Map<UUID, BackLocation> pendingBackTeleports = new ConcurrentHashMap<>();
     public fr.elias.oreoEssentials.modules.chat.channels.ChatChannelManager getChannelManager() { return channelManager; }
     public fr.elias.oreoEssentials.modules.tempfly.TempFlyService getTempFlyService() { return tempFlyService; }
@@ -606,6 +610,7 @@ public final class OreoEssentials extends JavaPlugin {
 
         showStartupBanner();
 
+        this.fontIconService  = new fr.elias.oreoEssentials.util.font.FontIconService(this);
         this.configService    = new ConfigService(this);
         this.crossServerSettings = fr.elias.oreoEssentials.config.CrossServerSettings.load(this);
         this.economyEnabled   = settingsConfig.economyEnabled();

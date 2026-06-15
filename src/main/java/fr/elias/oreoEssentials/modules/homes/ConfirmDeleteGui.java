@@ -34,6 +34,18 @@ public class ConfirmDeleteGui implements InventoryProvider {
                 Map.of("home", homeName),
                 p);
 
+        if (fr.elias.oreoEssentials.util.ConfirmDialog.dialogMode()) {
+            fr.elias.oreoEssentials.util.ConfirmDialog.show(p,
+                    net.kyori.adventure.text.Component.text("Delete home?",
+                            net.kyori.adventure.text.format.NamedTextColor.DARK_RED),
+                    net.kyori.adventure.text.Component.text("Permanently delete home \"" + homeName + "\"?",
+                            net.kyori.adventure.text.format.NamedTextColor.GRAY),
+                    "Yes, delete", "No, cancel",
+                    () -> { deleteHome(p, homes, homeName); if (onConfirm != null) onConfirm.run(); },
+                    onCancel);
+            return;
+        }
+
         SmartInventory.builder()
                 .id("oreo:homes:confirm")
                 .provider(new ConfirmDeleteGui(homes, homeName, onConfirm, onCancel))
@@ -52,18 +64,7 @@ public class ConfirmDeleteGui implements InventoryProvider {
                 actionItem(p, Material.GREEN_CONCRETE,
                         Lang.msgLegacy("homes.delete.yes", "<green>Yes, delete</green>", p)),
                 e -> {
-                    boolean ok = homes.delHome(p.getUniqueId(), homeName.toLowerCase());
-
-                    if (ok) {
-                        Lang.send(p, "homes.delete.success",
-                                "<red>Deleted home <yellow>%home%</yellow>.</red>",
-                                Map.of("home", homeName));
-                    } else {
-                        Lang.send(p, "homes.delete.failed",
-                                "<red>Failed to delete home <yellow>%home%</yellow>.</red>",
-                                Map.of("home", homeName));
-                    }
-
+                    deleteHome(p, homes, homeName);
                     p.closeInventory();
                     if (onConfirm != null) onConfirm.run();
                 }));
@@ -80,6 +81,20 @@ public class ConfirmDeleteGui implements InventoryProvider {
     @Override
     public void update(Player player, InventoryContents contents) {
         // No updates needed for this static confirmation GUI
+    }
+
+    /** Performs the actual home deletion and sends the success/failure message. */
+    private static void deleteHome(Player p, HomeService homes, String homeName) {
+        boolean ok = homes.delHome(p.getUniqueId(), homeName.toLowerCase());
+        if (ok) {
+            Lang.send(p, "homes.delete.success",
+                    "<red>Deleted home <yellow>%home%</yellow>.</red>",
+                    Map.of("home", homeName));
+        } else {
+            Lang.send(p, "homes.delete.failed",
+                    "<red>Failed to delete home <yellow>%home%</yellow>.</red>",
+                    Map.of("home", homeName));
+        }
     }
 
 

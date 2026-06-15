@@ -41,6 +41,8 @@ public final class DailyConfig {
     public boolean liveUpdateTimer = true;
     public boolean hideAttributes = true;
     public boolean buttonsDisabled = false;
+    /** "default" (inherit menus.display-mode), "inventory" (chest GUI) or "dialog". */
+    public String displayMode = "default";
 
     private final OreoEssentials plugin;
     private FileConfiguration cfg;
@@ -86,6 +88,7 @@ public final class DailyConfig {
         liveUpdateTimer = cfg.getBoolean("GUI.LiveUpdateTimer", true);
         hideAttributes  = cfg.getBoolean("GUI.HideAttributes", true);
         buttonsDisabled = cfg.getBoolean("GUI.ButtonsDisabled", false);
+        displayMode     = cfg.getString("GUI.DisplayMode", "default");
     }
 
     public void save() {

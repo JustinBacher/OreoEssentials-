@@ -84,7 +84,7 @@ public final class MainMenuGUI implements InventoryProvider {
                         Lang.sendRaw(player, module.getShopConfig().getMessage("no-permission"));
                         return;
                     }
-                    if ("dialog".equalsIgnoreCase(shop.getDisplayMode())) {
+                    if (fr.elias.oreoEssentials.util.DisplayMode.isDialog(shop.getDisplayMode())) {
                         player.closeInventory();
                         module.getShopDialogManager().open(player, shop);
                     } else {

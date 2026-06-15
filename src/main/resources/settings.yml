@@ -162,6 +162,12 @@ features:
         yaw: 180.0
         pitch: 0.0
 
+# Admin settings menu (/oesettings) rendering. `default` follows menus.display-mode
+# in config.yml; or pin `inventory` (chest GUI) / `dialog` (Paper Dialog API).
+settings-gui:
+  title: "§8Settings"
+  display-mode: default
+
 auto-reboot:
   enabled: false
   mode: "TIME" # TIME or INTERVAL

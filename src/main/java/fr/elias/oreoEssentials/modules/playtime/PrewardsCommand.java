@@ -33,7 +33,11 @@ public final class PrewardsCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
             Player p = (Player) sender;
-            new PrewardsMenu(svc).inventory(p).open(p);
+            if (fr.elias.oreoEssentials.util.DisplayMode.isDialog(svc.skin.displayMode)) {
+                new PrewardsDialogManager(svc).openPrewards(p);
+            } else {
+                new PrewardsMenu(svc).inventory(p).open(p);
+            }
             return true;
         }
 

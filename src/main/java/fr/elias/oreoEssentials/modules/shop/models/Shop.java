@@ -21,7 +21,7 @@ public final class Shop {
     private boolean hideBackButton = false;
 
     /** "inventory" (default) or "dialog". Set after construction by ShopManager. */
-    private String displayMode = "inventory";
+    private String displayMode = "default";
 
     /** Per-shop GUI layout — set after construction by ShopManager. */
     private ShopGuiLayout guiLayout;

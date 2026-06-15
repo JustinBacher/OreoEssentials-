@@ -3,6 +3,10 @@
 #  plugins/OreoEssentials/portals/config.yml
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Admin GUI rendering for /portals gui. `default` follows menus.display-mode in
+# config.yml; or pin `inventory` (chest GUI) / `dialog` (Dialog API — routing inputs).
+display-mode: default
+
 # Name of THIS server as registered in your proxy (Velocity/BungeeCord).
 # Used for cross-server portals. Leave empty if running a single-server setup.
 server-name: ""

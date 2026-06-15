@@ -39,6 +39,18 @@ public class WarpConfirmDeleteGui implements InventoryProvider {
                 p
         );
 
+        if (fr.elias.oreoEssentials.util.ConfirmDialog.dialogMode()) {
+            fr.elias.oreoEssentials.util.ConfirmDialog.show(p,
+                    net.kyori.adventure.text.Component.text("Delete warp?",
+                            net.kyori.adventure.text.format.NamedTextColor.DARK_RED),
+                    net.kyori.adventure.text.Component.text("Permanently delete warp \"" + warpName + "\"?",
+                            net.kyori.adventure.text.format.NamedTextColor.GRAY),
+                    "Yes, delete", "No, cancel",
+                    () -> performDelete(p, warps, warpName, onConfirm, onCancel),
+                    onCancel);
+            return;
+        }
+
         SmartInventory.builder()
                 .id("oreo:warps:confirm:" + warpName)
                 .provider(new WarpConfirmDeleteGui(warps, warpName, onConfirm, onCancel))
@@ -47,6 +59,27 @@ public class WarpConfirmDeleteGui implements InventoryProvider {
                 .manager(OreoEssentials.get().getInvManager())
                 .build()
                 .open(p);
+    }
+
+    /** Performs the warp deletion (and directory cleanup), messaging and routing callbacks. */
+    private static void performDelete(Player p, WarpService warps, String warpName,
+                                      Runnable onConfirm, Runnable onCancel) {
+        boolean ok = warps.delWarp(warpName);
+        if (ok) {
+            WarpDirectory dir = OreoEssentials.get().getWarpDirectory();
+            if (dir != null) {
+                try { dir.deleteWarp(warpName); } catch (Throwable ignored) {}
+            }
+            Lang.send(p, "warp.delete.success",
+                    "<red>Deleted warp <yellow>%warp%</yellow>.</red>",
+                    Map.of("warp", warpName));
+            if (onConfirm != null) onConfirm.run();
+        } else {
+            Lang.send(p, "warp.delete.failed",
+                    "<red>Failed to delete warp <yellow>%warp%</yellow>.</red>",
+                    Map.of("warp", warpName));
+            if (onCancel != null) onCancel.run();
+        }
     }
 
     @Override
@@ -63,30 +96,8 @@ public class WarpConfirmDeleteGui implements InventoryProvider {
         contents.set(SlotPos.of(1, 3), ClickableItem.of(
                 actionItem(Material.GREEN_CONCRETE, yesName),
                 e -> {
-                    boolean ok = warps.delWarp(warpName);
-                    if (ok) {
-                        // clear directory metadata too
-                        WarpDirectory dir = OreoEssentials.get().getWarpDirectory();
-                        if (dir != null) {
-                            try {
-                                dir.deleteWarp(warpName);
-                            } catch (Throwable ignored) {}
-                        }
-
-                        Lang.send(p, "warp.delete.success",
-                                "<red>Deleted warp <yellow>%warp%</yellow>.</red>",
-                                Map.of("warp", warpName));
-
-                        p.closeInventory();
-                        if (onConfirm != null) onConfirm.run();
-                    } else {
-                        Lang.send(p, "warp.delete.failed",
-                                "<red>Failed to delete warp <yellow>%warp%</yellow>.</red>",
-                                Map.of("warp", warpName));
-
-                        p.closeInventory();
-                        if (onCancel != null) onCancel.run();
-                    }
+                    p.closeInventory();
+                    performDelete(p, warps, warpName, onConfirm, onCancel);
                 }
         ));
 

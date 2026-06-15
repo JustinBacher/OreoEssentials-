@@ -36,6 +36,42 @@ logging:
 
 discord:
   link_backend: "file"   # or "mongodb" for cross-network
+
+# ==================== MENUS (GLOBAL MASTER SWITCH) ====================
+menus:
+  # Server-wide default for EVERY menu (shop, mail, kits, currency, portals,
+  # home/warp confirmations, …):
+  #   inventory -> classic chest GUI (default)
+  #   dialog    -> Paper 1.21.6+ Dialog API (see DIALOG MENU ICONS below)
+  #
+  # Flip this one value to switch all menus at once. Any individual menu can still
+  # override it: each feature's own `display-mode` is `default` (= follow this),
+  # but set it to `inventory` or `dialog` to pin that one menu regardless.
+  display-mode: inventory
+
+# ==================== MAIL ====================
+mail:
+  # `default` follows menus.display-mode above; or pin to inventory / dialog.
+  display-mode: default
+
+# ==================== DIALOG MENU ICONS ====================
+# Paper Dialog menus (e.g. the shop in display-mode: dialog) render item
+# pictures by splicing resource-pack font glyphs into button text. Dialog
+# buttons have no item-icon field, so this font is the ONLY way to show an
+# item image inside a button.
+#
+# IMPORTANT: If you do NOT install the matching resource-pack font, NO item
+# icons will display — every menu falls back to TEXT-ONLY (names only). This
+# is also why it ships OFF: with the font disabled, vanilla clients never see
+# "tofu" (missing-glyph boxes).
+#
+# To enable: set enabled: true, install the resource pack, and set 'font' to
+# the font Key the pack defines for the glyphs in font-mappings.yml
+# (namespace:path, e.g. minecraft:default or yourpack:icons).
+font-icons:
+  enabled: false
+  font: "minecraft:default"
+
 # ==================== STORAGE & DATABASE ====================
 
 # Primary essentials data store (homes/warps/spawn/back)

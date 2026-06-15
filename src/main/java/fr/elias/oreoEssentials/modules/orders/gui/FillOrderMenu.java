@@ -3,6 +3,7 @@ package fr.elias.oreoEssentials.modules.orders.gui;
 import fr.elias.oreoEssentials.modules.orders.OrdersModule;
 import fr.elias.oreoEssentials.modules.orders.model.FillResult;
 import fr.elias.oreoEssentials.modules.orders.model.Order;
+import fr.elias.oreoEssentials.util.TextInputDialog;
 import fr.minuskube.inv.ClickableItem;
 import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
@@ -13,6 +14,8 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,11 +42,14 @@ public final class FillOrderMenu implements InventoryProvider {
     public static boolean consumeFillQtyInput(OrdersModule module, Player p, String raw) {
         PendingFill pf = waitingFill.remove(p.getUniqueId());
         if (pf == null) return false;
+        return consumeFillQtyValue(module, p, raw, pf);
+    }
 
+    private static boolean consumeFillQtyValue(OrdersModule module, Player p, String raw, PendingFill pf) {
         int qty;
         try { qty = Integer.parseInt(raw.trim()); } catch (NumberFormatException e) {
-            waitingFill.put(p.getUniqueId(), pf);
             p.sendMessage(module.getConfig().msg("fill.invalid-qty"));
+            reopenFillDialog(module, p, pf);
             return true;
         }
 
@@ -53,9 +59,9 @@ public final class FillOrderMenu implements InventoryProvider {
             Order live = module.getService().findOrder(order.getId()).orElse(null);
             int maxQty = live != null ? live.getRemainingQty() : order.getRemainingQty();
             if (qty <= 0 || qty > maxQty) {
-                waitingFill.put(p.getUniqueId(), pf);
                 p.sendMessage(module.getConfig().msg("fill.invalid-qty-range",
                         Map.of("max", String.valueOf(maxQty))));
+                reopenFillDialog(module, p, pf);
                 return true;
             }
         }
@@ -64,6 +70,36 @@ public final class FillOrderMenu implements InventoryProvider {
         fr.elias.oreoEssentials.util.OreScheduler.run(module.getPlugin(), () ->
                 ConfirmFillMenu.getInventory(module, order, finalQty).open(p));
         return true;
+    }
+
+    private static void reopenFillDialog(OrdersModule module, Player p, PendingFill pf) {
+        if (!TextInputDialog.supported(p)) {
+            waitingFill.put(p.getUniqueId(), pf);
+            return;
+        }
+        openFillQtyInput(module, p, pf.order());
+    }
+
+    private static void openFillQtyInput(OrdersModule module, Player p, Order order) {
+        p.closeInventory();
+        if (TextInputDialog.show(
+                p,
+                Component.text("Fill Order", NamedTextColor.GOLD),
+                Component.text("Enter how many items you want to deliver.", NamedTextColor.GRAY),
+                "qty",
+                "Quantity",
+                "",
+                9,
+                "Next",
+                "Cancel",
+                (player, input) -> consumeFillQtyValue(module, player, input, new PendingFill(order)),
+                () -> FillOrderMenu.getInventory(module, order).open(p))) {
+            return;
+        }
+
+        waitingFill.put(p.getUniqueId(), new PendingFill(order));
+        p.sendMessage(module.getConfig().msg("fill.enter-qty",
+                Map.of("max", String.valueOf(order.getRemainingQty()))));
     }
 
     // ── Step 1: Order details ─────────────────────────────────────────────────
@@ -130,10 +166,7 @@ public final class FillOrderMenu implements InventoryProvider {
                         player.sendMessage(module.getConfig().msg("fill.order-gone"));
                         return;
                     }
-                    player.closeInventory();
-                    waitingFill.put(player.getUniqueId(), new PendingFill(live));
-                    player.sendMessage(module.getConfig().msg("fill.enter-qty",
-                            Map.of("max", String.valueOf(live.getRemainingQty()))));
+                    openFillQtyInput(module, player, live);
                 }));
 
         // Back

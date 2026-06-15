@@ -3,6 +3,7 @@ package fr.elias.oreoEssentials.modules.auctionhouse.gui;
 import fr.elias.oreoEssentials.modules.auctionhouse.AuctionHouseModule;
 import fr.elias.oreoEssentials.modules.currency.Currency;
 import fr.elias.oreoEssentials.modules.currency.CurrencyService;
+import fr.elias.oreoEssentials.util.TextInputDialog;
 import fr.minuskube.inv.ClickableItem;
 import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
@@ -80,8 +81,12 @@ public class CurrencyPickerGUI implements InventoryProvider {
             contents.set(nextSlot / 9, nextSlot % 9, ClickableItem.of(vaultBtn, e -> {
                 click(player);
                 player.closeInventory();
-                module.addPendingSell(player, itemToSell, null, durationHours);
-                player.sendMessage(c("&6&lAuction House &8» &eType the &6listing price &ein chat:"));
+                if (TextInputDialog.supported(player)) {
+                    module.getDialogManager().openSellPriceDialog(player, itemToSell, null, durationHours);
+                } else {
+                    module.addPendingSell(player, itemToSell, null, durationHours);
+                    player.sendMessage(c("&6&lAuction House &8» &eType the &6listing price &ein chat:"));
+                }
             }));
             nextSlot++;
         }
@@ -110,9 +115,13 @@ public class CurrencyPickerGUI implements InventoryProvider {
                 contents.set(nextSlot / 9, nextSlot % 9, ClickableItem.of(btn, e -> {
                     click(player);
                     player.closeInventory();
-                    module.addPendingSell(player, itemToSell, cid, durationHours);
-                    player.sendMessage(c("&6&lAuction House &8» &eType the &6listing price &7(in &e"
-                            + displayName + "&7) &ein chat:"));
+                    if (TextInputDialog.supported(player)) {
+                        module.getDialogManager().openSellPriceDialog(player, itemToSell, cid, durationHours);
+                    } else {
+                        module.addPendingSell(player, itemToSell, cid, durationHours);
+                        player.sendMessage(c("&6&lAuction House &8» &eType the &6listing price &7(in &e"
+                                + displayName + "&7) &ein chat:"));
+                    }
                 }));
                 nextSlot++;
             }

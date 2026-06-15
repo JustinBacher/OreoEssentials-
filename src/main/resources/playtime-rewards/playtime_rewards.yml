@@ -41,6 +41,8 @@ settings:
 
   # ---------- SmartInvs GUI skin ----------
   gui:
+    # `default` follows menus.display-mode in config.yml; or pin inventory / dialog
+    display-mode: default
     # Inventory title & size
     title: "&bPlaytime Rewards"
     rows: 5                    # 1..6 rows

@@ -4,6 +4,16 @@
 
 enabled: true
 
+# ── Display Mode ──────────────────────────────────────
+# default:   follow the global menus.display-mode in config.yml
+# inventory: classic chest GUI
+# dialog:    Paper Dialog API (requires Paper 1.21.6+)
+#
+# Parity note for "dialog": open dialogs are NOT live-refreshed across servers.
+# There is no push of new/sold/cancelled listings into an already-open dialog —
+# players use the in-dialog "Refresh" button to re-pull the latest listings.
+display-mode: default
+
 # ── Storage ──
 storage:
   type: auto  # Options: auto | json | mongodb

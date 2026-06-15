@@ -23,7 +23,7 @@ import java.util.List;
 public final class DialogButtons {
 
     /** Default button width, in dialog grid units. */
-    public static final int DEFAULT_WIDTH = 100;
+    public static final int DEFAULT_WIDTH = 130;
 
     /** Shared callback options: unlimited uses, default lifetime. */
     public static final ClickCallback.Options CB_OPTS = ClickCallback.Options.builder()
@@ -41,6 +41,28 @@ public final class DialogButtons {
 
     public static Btn button(Component label) {
         return new Btn(label);
+    }
+
+    /**
+     * Icon-prefixed button: splices a (possibly empty) font-glyph icon ahead of
+     * the label. When {@code icon} is null or {@link Component#empty()} the
+     * label is used verbatim — no glyph, no leading space — so vanilla clients
+     * without the resource-pack font see clean text only.
+     */
+    public static Btn button(Component icon, Component label) {
+        return new Btn(prefixIcon(icon, label));
+    }
+
+    public static Btn button(Component icon, String text, NamedTextColor color) {
+        return button(icon, Component.text(text, color));
+    }
+
+    /** Prepends {@code icon + space} to {@code label}, or returns the label as-is. */
+    public static Component prefixIcon(Component icon, Component label) {
+        if (icon == null || Component.empty().equals(icon)) {
+            return label;
+        }
+        return Component.empty().append(icon).append(Component.space()).append(label);
     }
 
     public static Buttons list() {
@@ -71,6 +93,37 @@ public final class DialogButtons {
         return Dialog.create(f -> f.empty()
                 .base(base)
                 .type(DialogType.multiAction(buttons, close, columns)));
+    }
+
+    /**
+     * Builds a Prev / "Page x/y" / Next button row for a paged dialog. The
+     * current {@code offset} is carried as closure state: each nav button hands
+     * the new offset to {@code reopen}, which re-renders the dialog at that page
+     * (capturing whatever other view state the caller needs). Prev/Next are
+     * omitted at the bounds; the page indicator is a no-op button. Returns a
+     * {@link Buttons} so callers can fold it into a larger list.
+     */
+    public static Buttons pagination(int offset, int pageSize, int total,
+            java.util.function.IntConsumer reopen) {
+        int safeSize = Math.max(1, pageSize);
+        int pages = Math.max(1, (total + safeSize - 1) / safeSize);
+        int page = Math.min(pages, (offset / safeSize) + 1);
+        boolean hasPrev = offset > 0;
+        boolean hasNext = offset + safeSize < total;
+
+        return list()
+                .addIf(hasPrev, button("« Prev", NamedTextColor.YELLOW)
+                        .tip("Previous page")
+                        .width(90)
+                        .click((rv, a) -> reopen.accept(Math.max(0, offset - safeSize))))
+                .add(button("Page " + page + "/" + pages, NamedTextColor.GRAY)
+                        .width(90)
+                        .click((rv, a) -> {
+                        }))
+                .addIf(hasNext, button("Next »", NamedTextColor.YELLOW)
+                        .tip("Next page")
+                        .width(90)
+                        .click((rv, a) -> reopen.accept(offset + safeSize)));
     }
 
     // ── Single-button builder ─────────────────────────────────────────────────

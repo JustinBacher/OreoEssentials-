@@ -63,7 +63,7 @@ public final class ShopConfig {
     }
 
     public String getDisplayMode() {
-        return config.getString("display-mode", "inventory");
+        return config.getString("display-mode", "default");
     }
 
     public long   getTransactionCooldown()      { return config.getLong("anti-dupe.transaction-cooldown-ms", 300L); }

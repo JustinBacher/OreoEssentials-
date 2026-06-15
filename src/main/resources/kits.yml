@@ -107,6 +107,8 @@
 use-itemadder: true     # If true and ItemsAdder is installed, "ia:ns:id" is allowed.
 
 menu:
+  # `default` follows menus.display-mode in config.yml; or pin inventory / dialog
+  display-mode: default
   title: "&6Kits"       # Title of the SmartInvs GUI.
   rows: 4               # 1–6 rows. Extra kits auto-flow / paginate.
   fill: true            # Whether to fill empty slots with glass panes.

@@ -18,6 +18,7 @@ public final class AuctionHouseConfig {
     private final File folder;
 
     private boolean enabled;
+    private String displayMode;
     private String storageType;
     private String mongoCollection;
 
@@ -62,6 +63,7 @@ public final class AuctionHouseConfig {
         gui        = YamlConfiguration.loadConfiguration(new File(folder, "gui.yml"));
 
         enabled            = cfg.getBoolean("enabled", true);
+        displayMode        = cfg.getString("display-mode", "default").toLowerCase(Locale.ROOT);
         storageType        = cfg.getString("storage.type", "auto").toLowerCase(Locale.ROOT);
         mongoCollection    = cfg.getString("storage.mongodb.collection", "oreo_auctions");
 
@@ -91,6 +93,8 @@ public final class AuctionHouseConfig {
 
 
     public boolean   enabled()               { return enabled; }
+    /** "inventory" (default) or "dialog" (Paper Dialog API). */
+    public String    displayMode()           { return displayMode; }
     public String    storageType()           { return storageType; }
     public String    mongoCollection()       { return mongoCollection; }
     public double    minPrice()              { return minPrice; }

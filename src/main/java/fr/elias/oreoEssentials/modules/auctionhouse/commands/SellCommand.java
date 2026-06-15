@@ -3,6 +3,7 @@ package fr.elias.oreoEssentials.modules.auctionhouse.commands;
 import fr.elias.oreoEssentials.modules.auctionhouse.AuctionHouseModule;
 import fr.elias.oreoEssentials.modules.auctionhouse.gui.CurrencyPickerGUI;
 import fr.elias.oreoEssentials.modules.auctionhouse.gui.SellGUI;
+import fr.elias.oreoEssentials.util.TextInputDialog;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -32,6 +33,9 @@ public final class SellCommand implements CommandExecutor {
             p.sendMessage(module.getConfig().getMessage("errors.no-permission"));
             return true;
         }
+
+        // Adding listings always uses the inventory-based GUI, even when the rest
+        // of the auction house is configured to render via dialogs.
         ItemStack item = p.getInventory().getItemInMainHand();
         if (item.getType() == Material.AIR) {
             p.sendMessage(module.getConfig().getMessage("errors.no-item-in-hand"));
@@ -44,13 +48,18 @@ public final class SellCommand implements CommandExecutor {
             catch (NumberFormatException e) { p.sendMessage("§cInvalid duration."); return true; }
         }
 
-        // No price argument → open currency picker; player types price in chat after selecting.
+        // Primary flow: choose a currency first, then enter the price through a
+        // dialog when supported. The old chat prompt remains only as fallback.
         if (args.length == 0) {
-            CurrencyPickerGUI.getInventory(module, item, duration).open(p);
+            if (TextInputDialog.supported(p)) {
+                module.getDialogManager().openAddListing(p);
+            } else {
+                CurrencyPickerGUI.getInventory(module, item, duration).open(p);
+            }
             return true;
         }
 
-        // /ahs <price> [duration] → skip picker, use Vault directly (legacy behaviour).
+        // Legacy compatibility shortcut: /ahs sell <price> [duration]
         double price;
         try { price = Double.parseDouble(args[0]); }
         catch (NumberFormatException e) { p.sendMessage("§cInvalid price."); return true; }

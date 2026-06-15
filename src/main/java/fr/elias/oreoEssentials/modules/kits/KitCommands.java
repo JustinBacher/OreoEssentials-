@@ -78,8 +78,13 @@ public class KitCommands implements CommandExecutor, TabCompleter {
                 return true;
             }
 
-            // Open SmartInvs menu
-            KitsMenuSI.open(plugin, manager, p);
+            // Open the menu (Dialog API or chest GUI per display-mode)
+            if (fr.elias.oreoEssentials.util.DisplayMode.isDialog(
+                    manager.kitsCfg().getString("menu.display-mode", null))) {
+                new KitsDialogManager(plugin, manager).openKits(p);
+            } else {
+                KitsMenuSI.open(plugin, manager, p);
+            }
             return true;
         }
 

@@ -4,6 +4,7 @@ import fr.elias.oreoEssentials.OreoEssentials;
 import fr.elias.oreoEssentials.modules.homes.ConfirmDeleteGui;
 import fr.elias.oreoEssentials.modules.homes.home.HomeService.StoredHome;
 import fr.elias.oreoEssentials.util.Lang;
+import fr.elias.oreoEssentials.util.TextInputDialog;
 import fr.minuskube.inv.ClickableItem;
 import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
@@ -15,6 +16,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.util.*;
 
@@ -44,14 +47,16 @@ public class HomesGuiProvider implements InventoryProvider {
         names.sort(String.CASE_INSENSITIVE_ORDER);
         int used = names.size();
         int max = guessMaxHomes(p);
+        Pagination pagination = contents.pagination();
 
         contents.set(0, 4, ClickableItem.empty(counterItem(p, used, max)));
+
+        contents.set(0, 0, ClickableItem.of(createItem(p), e -> openCreateHomeInput(p, pagination.getPage())));
 
         contents.set(0, 8, ClickableItem.of(refreshItem(p), e -> {
             contents.inventory().open(p, contents.pagination().getPage());
         }));
 
-        Pagination pagination = contents.pagination();
         int pageSize = 28;
 
         ClickableItem[] items = names.stream().map(name -> {
@@ -140,6 +145,37 @@ public class HomesGuiProvider implements InventoryProvider {
                 .open(p, page);
     }
 
+    private void openCreateHomeInput(Player p, int page) {
+        p.closeInventory();
+        if (TextInputDialog.show(
+                p,
+                Component.text("Create Home", NamedTextColor.GOLD),
+                Component.text("Enter a name for the new home.", NamedTextColor.GRAY),
+                "name",
+                "Home name",
+                "",
+                32,
+                "Create",
+                "Cancel",
+                (player, input) -> {
+                    if (input == null || input.isBlank()) {
+                        Lang.send(player, "sethome.empty",
+                                "<red>Home name cannot be empty.</red>");
+                        reopenHomesGui(player, page);
+                        return;
+                    }
+                    player.performCommand("sethome " + input.trim());
+                    reopenHomesGui(player, page);
+                },
+                () -> reopenHomesGui(p, page))) {
+            return;
+        }
+
+        Lang.send(p, "homes.gui.create.fallback",
+                "<gray>Use <aqua>/sethome &lt;name&gt;</aqua> to create a home.</gray>");
+        reopenHomesGui(p, page);
+    }
+
 
     private ItemStack filler() {
         ItemStack it = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
@@ -160,6 +196,22 @@ public class HomesGuiProvider implements InventoryProvider {
             meta.setLore(List.of(
                     Lang.msgLegacy("homes.gui.refresh.lore",
                             "<gray>Click to reload homes.</gray>", p)
+            ));
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            it.setItemMeta(meta);
+        }
+        return it;
+    }
+
+    private ItemStack createItem(Player p) {
+        ItemStack it = new ItemStack(Material.LIME_DYE);
+        ItemMeta meta = it.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(Lang.msgLegacy("homes.gui.create.title",
+                    "<green>Create Home</green>", p));
+            meta.setLore(List.of(
+                    Lang.msgLegacy("homes.gui.create.lore",
+                            "<gray>Click to name and save a new home.</gray>", p)
             ));
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             it.setItemMeta(meta);

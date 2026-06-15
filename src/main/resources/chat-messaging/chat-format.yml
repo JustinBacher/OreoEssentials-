@@ -97,6 +97,8 @@ chat:
       title: "<gold>Oreo Channels</gold>"
       rows: 4
       fill_empty_with_glass: true
+      # `default` follows menus.display-mode in config.yml; or pin inventory / dialog
+      display-mode: default
 
     list_order:
       - "global"
